@@ -350,7 +350,11 @@ fn layout_topology(
     for (index, element) in scene.elements.iter().enumerate() {
         let is_background =
             element.role.as_deref() == Some("background") || element.id == "background";
-        if is_background || hidden.contains(&element.id) {
+        // `visibility: "optional"` marks an element as expendable under
+        // degradation; `visibility: "hidden"` removes it from the composition
+        // entirely (an authoring hide toggle).
+        let is_hidden = element.visibility.as_deref() == Some("hidden");
+        if is_background || is_hidden || hidden.contains(&element.id) {
             continue;
         }
 

@@ -125,7 +125,14 @@ pub fn pack(asset: &Asset) -> Result<Vec<u8>> {
 
 /// Serialize an asset into a `.rva` container with explicit options.
 pub fn pack_with(asset: &Asset, options: PackOptions) -> Result<Vec<u8>> {
-    let mut scene = asset.scene.clone();
+    pack_scene_with(asset, &asset.scene.clone(), options)
+}
+
+/// Serialize an arbitrary scene against an asset's resource store. Used to
+/// package a pruned scene (hidden layers stripped, unused resources dropped)
+/// while reusing the already-loaded resource bytes.
+pub fn pack_scene_with(asset: &Asset, scene: &Scene, options: PackOptions) -> Result<Vec<u8>> {
+    let mut scene = scene.clone();
 
     // Promote a raw fallback path into a declared resource so the package is
     // fully self-describing and re-packable.
