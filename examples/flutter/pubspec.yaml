@@ -1,0 +1,23 @@
+name: rva_example_flutter
+description: Example app using the RVA Flutter adapter.
+version: 0.1.0
+publish_to: none
+
+environment:
+  sdk: ">=3.4.0 <4.0.0"
+
+dependencies:
+  flutter:
+    sdk: flutter
+  rva_flutter:
+    path: ../../adapters/flutter
+
+dev_dependencies:
+  flutter_test:
+    sdk: flutter
+
+flutter:
+  uses-material-design: true
+  assets:
+    - assets/hero.rva
+    - assets/fixtures/

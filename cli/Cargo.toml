@@ -1,0 +1,16 @@
+[package]
+name = "rva-cli"
+description = "RVA developer CLI: validate, inspect and render responsive visual assets."
+version.workspace = true
+edition.workspace = true
+license.workspace = true
+
+[[bin]]
+name = "rva"
+path = "src/main.rs"
+
+[dependencies]
+rva-core = { path = "../core" }
+clap = { version = "4", features = ["derive"] }
+serde_json = "1"
+anyhow = "1"

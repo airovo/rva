@@ -1,0 +1,12 @@
+{
+  "name": "@rva/node",
+  "platform": "node",
+  "language": "typescript",
+  "runtime": "node",
+  "status": "implemented",
+  "core": "rva-core",
+  "core_bridge": "WebAssembly (wasm-bindgen nodejs target, lean core)",
+  "rendering": "SVG composed in JS (src/render-svg.ts)",
+  "entry": "src/index.ts",
+  "example": "examples/node"
+}

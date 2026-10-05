@@ -1,0 +1,92 @@
+<!doctype html>
+<html lang="en">
+  <head>
+    <meta charset="utf-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1" />
+    <title>RVA — one asset, any shape</title>
+    <style>
+      :root { color-scheme: light; font-family: system-ui, sans-serif; }
+      * { box-sizing: border-box; }
+      body {
+        margin: 0;
+        min-height: 100dvh;
+        background: radial-gradient(1200px 600px at 50% -10%, #eef2ff, #f8fafc 60%);
+        color: #0f172a;
+        display: flex;
+        flex-direction: column;
+        align-items: center;
+        justify-content: center;
+        gap: 18px;
+        padding: 24px;
+        text-align: center;
+      }
+      h1 { font-size: 18px; margin: 0; letter-spacing: -0.01em; }
+      p { color: #475569; margin: 0; font-size: 14px; max-width: 48ch; }
+      code { background: #e2e8f0; padding: 0 4px; border-radius: 4px; }
+
+      .stage { width: 100%; max-width: 1100px; }
+      rva-image {
+        display: block;
+        width: 100%;
+        border-radius: 16px;
+        background: #fff;
+        box-shadow: 0 20px 50px rgba(15, 23, 42, 0.15);
+        /* Default shape: portrait / phone. The media queries below morph the box,
+           and <rva-image> recomposes the asset for the new dimensions. */
+        aspect-ratio: 9 / 16;
+      }
+      @media (min-width: 480px)  { rva-image { aspect-ratio: 1 / 1; } }        /* square   */
+      @media (min-width: 820px)  { rva-image { aspect-ratio: 16 / 9; } }       /* desktop  */
+      @media (min-width: 1400px) { rva-image { aspect-ratio: 1920 / 500; } }   /* ultrawide */
+
+      .badge {
+        display: inline-flex;
+        gap: 8px;
+        align-items: center;
+        font: 12px/1 ui-monospace, SFMono-Regular, Menlo, monospace;
+        color: #334155;
+        background: #eef2ff;
+        border: 1px solid #c7d2fe;
+        border-radius: 999px;
+        padding: 7px 14px;
+      }
+      .badge b { color: #1e293b; font-weight: 600; }
+    </style>
+  </head>
+  <body>
+    <h1>RVA — one asset, any shape</h1>
+    <p>
+      The same <code>hero.rva</code> in a single element. Resize the window: the
+      box changes shape and the composition recomposes.
+    </p>
+
+    <div class="stage">
+      <rva-image id="hero" src="hero.rva" alt="Responsive campaign hero"></rva-image>
+    </div>
+
+    <div class="badge" id="status">resolving…</div>
+
+    <script type="importmap">
+      { "imports": { "@rva/web": "../../adapters/web/dist/rva-image.js" } }
+    </script>
+    <script type="module">
+      import "@rva/web";
+
+      const hero = document.getElementById("hero");
+      const status = document.getElementById("status");
+
+      hero.addEventListener("rva-render", (event) => {
+        const scene = event.detail;
+        const degraded = scene.degraded ? " · <b>degraded</b>" : "";
+        status.innerHTML =
+          `topology <b>${scene.topology}</b> · ${scene.width}×${scene.height} · ` +
+          `viability <b>${scene.viability.toFixed(2)}</b>${degraded}`;
+      });
+
+      hero.addEventListener("rva-error", (event) => {
+        status.textContent = "render error — see console";
+        console.error(event.detail);
+      });
+    </script>
+  </body>
+</html>

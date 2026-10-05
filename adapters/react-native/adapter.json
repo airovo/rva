@@ -1,0 +1,18 @@
+{
+  "name": "@rva/react-native",
+  "platform": "react-native",
+  "language": "typescript + kotlin + swift",
+  "runtime": "ios/android",
+  "status": "implemented (native module) + WebView fallback",
+  "architecture": "TS API -> RNRva native module -> Kotlin/Swift -> Rust core",
+  "core_bridge": "JNI (librva_ffi.so) on Android, C ABI (RVAFFI.xcframework) on iOS",
+  "entry": "src/index.ts",
+  "native_modules": [
+    "ios/RNRva.swift",
+    "ios/RNRva.m",
+    "android/src/main/java/dev/rva/rn/RNRvaModule.kt"
+  ],
+  "core_functions": ["rva_resolve", "rva_render_png"],
+  "example": "examples/react-native",
+  "notes": "Native modules marshal to the shared Rust core; renderPng returns a base64 PNG that the TS component draws with <Image>. Falls back to a WebView hosting <rva-image> when the module is not linked."
+}

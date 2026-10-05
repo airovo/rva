@@ -1,0 +1,34 @@
+// React Native Android native module for RVA.
+//
+// Wraps the Rust core through the @rva/kotlin JNI bridge (librva_ffi.so).
+// Build the AAR first:  (cd ../../kotlin && ./gradlew assembleRelease)
+apply plugin: "com.android.library"
+apply plugin: "kotlin-android"
+
+android {
+    namespace "dev.rva.rn"
+    compileSdk 35
+
+    defaultConfig {
+        minSdk 24
+    }
+
+    compileOptions {
+        sourceCompatibility JavaVersion.VERSION_17
+        targetCompatibility JavaVersion.VERSION_17
+    }
+    kotlinOptions {
+        jvmTarget = "17"
+    }
+}
+
+repositories {
+    google()
+    mavenCentral()
+}
+
+dependencies {
+    implementation "com.facebook.react:react-native:+"
+    // The @rva/kotlin library (JNI + librva_ffi.so for arm64-v8a/x86_64).
+    implementation files("../../kotlin/build/outputs/aar/rva-kotlin-release.aar")
+}

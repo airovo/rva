@@ -1,0 +1,27 @@
+<!doctype html>
+<html lang="en">
+  <head>
+    <meta charset="utf-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1" />
+    <title>RVA · React</title>
+    <style>
+      :root { color-scheme: light; font-family: system-ui, sans-serif; }
+      body { margin: 0; background: radial-gradient(1200px 600px at 50% -10%, #eef2ff, #f8fafc 60%); color: #0f172a; }
+      .wrap { min-height: 100dvh; display: flex; flex-direction: column; align-items: center; justify-content: center; gap: 16px; padding: 24px; text-align: center; }
+      .wrap p { color: #475569; font-size: 14px; max-width: 48ch; margin: 0; }
+      .hero { display: block; width: 100%; max-width: 1100px; border-radius: 16px; background: #fff; box-shadow: 0 20px 50px rgba(15,23,42,.15); aspect-ratio: 9/16; }
+      @media (min-width: 480px)  { .hero { aspect-ratio: 1/1; } }
+      @media (min-width: 820px)  { .hero { aspect-ratio: 16/9; } }
+      @media (min-width: 1400px) { .hero { aspect-ratio: 1920/500; } }
+      .badge { font: 12px/1 ui-monospace, monospace; color: #334155; background: #eef2ff; border: 1px solid #c7d2fe; border-radius: 999px; padding: 7px 14px; }
+      .picker { display: flex; flex-wrap: wrap; gap: 6px; justify-content: center; max-width: 1100px; }
+      .chip { font: 12px/1 ui-monospace, monospace; color: #334155; background: #fff; border: 1px solid #cbd5e1; border-radius: 999px; padding: 6px 10px; cursor: pointer; }
+      .chip:hover { border-color: #2563eb; }
+      .chip.active { background: #2563eb; border-color: #2563eb; color: #fff; }
+    </style>
+  </head>
+  <body>
+    <div id="root"></div>
+    <script type="module" src="/src/main.tsx"></script>
+  </body>
+</html>

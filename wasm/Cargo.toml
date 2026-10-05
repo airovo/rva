@@ -1,0 +1,21 @@
+[package]
+name = "rva-wasm"
+description = "WebAssembly bindings for the RVA reference core."
+version.workspace = true
+edition.workspace = true
+license.workspace = true
+
+[lib]
+crate-type = ["cdylib", "rlib"]
+
+[features]
+default = []
+console_error_panic_hook = ["dep:console_error_panic_hook"]
+
+[dependencies]
+# Lean core for the browser: parse + resolve only (no font metrics, no
+# rasterizer, no image codecs). Native adapters use the default features.
+rva-core = { path = "../core", default-features = false }
+wasm-bindgen = "0.2"
+serde_json = "1"
+console_error_panic_hook = { version = "0.1", optional = true }

@@ -1,0 +1,19 @@
+[package]
+name = "rva-ffi"
+description = "Stable C ABI for the RVA core, used by native adapters (Swift, Kotlin, Flutter, C)."
+version.workspace = true
+edition.workspace = true
+license.workspace = true
+
+[lib]
+name = "rva_ffi"
+crate-type = ["staticlib", "cdylib", "rlib"]
+
+[features]
+default = []
+jni = ["dep:jni"]
+
+[dependencies]
+rva-core = { path = "../core" }
+serde_json = "1"
+jni = { version = "0.21", optional = true }

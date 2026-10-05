@@ -1,0 +1,12 @@
+{
+  "name": "@rva/flutter",
+  "platform": "flutter",
+  "language": "dart",
+  "runtime": "flutter",
+  "status": "implemented",
+  "core": "rva-core",
+  "core_bridge": "dart:ffi over the C ABI (librva_ffi)",
+  "rendering": "Flutter widgets/canvas (lib/rva_widget.dart); optional core PNG",
+  "entry": "lib/rva_image.dart",
+  "example": "examples/flutter"
+}

@@ -1,0 +1,12 @@
+{
+  "name": "@rva/web",
+  "platform": "web",
+  "language": "typescript",
+  "runtime": "browser",
+  "status": "implemented",
+  "core": "rva-core",
+  "core_bridge": "WebAssembly (wasm-bindgen, lean core: parse + resolve)",
+  "rendering": "Canvas 2D in a framework-neutral <rva-image> custom element",
+  "entry": "src/rva-image.ts",
+  "example": "examples/web"
+}

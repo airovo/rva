@@ -1,0 +1,30 @@
+{
+  "name": "rva-monorepo",
+  "private": true,
+  "description": "RVA (Responsive Visual Asset) — core, CLI, FFI and platform adapters.",
+  "workspaces": [
+    "adapters/types",
+    "adapters/web",
+    "adapters/node",
+    "adapters/react",
+    "adapters/vue",
+    "adapters/svelte",
+    "adapters/react-native",
+    "examples/node",
+    "examples/react",
+    "examples/vue",
+    "examples/svelte",
+    "examples/react-native"
+  ],
+  "scripts": {
+    "generate:types": "npm run generate -w @rva/types",
+    "build": "npm run build -w @rva/types && npm run build -w @rva/web && npm run build -w @rva/node && npm run build -w @rva/react && npm run build -w @rva/vue && npm run build -w @rva/react-native",
+    "check:svelte": "npm run check -w @rva/svelte",
+    "build:wasm": "./adapters/web/build.sh && node adapters/node/build.js"
+  },
+  "devDependencies": {
+    "typescript": "^5.6.0",
+    "@types/node": "^22.0.0"
+  },
+  "license": "MIT"
+}

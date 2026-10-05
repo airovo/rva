@@ -1,0 +1,13 @@
+{
+  "name": "@rva/kotlin",
+  "platform": "android",
+  "language": "kotlin",
+  "runtime": "android",
+  "status": "implemented",
+  "core": "rva-core",
+  "core_bridge": "JNI over the C ABI (librva_ffi.so; Java_dev_rva_RvaNative_native*)",
+  "rendering": "Android Canvas (src/main/kotlin/dev/rva/RVARenderer.kt); optional core PNG (nativeRenderPng)",
+  "entry": "src/main/kotlin/dev/rva/RVAImage.kt",
+  "jni_libs": ["arm64-v8a", "x86_64"],
+  "example": "examples/kotlin"
+}

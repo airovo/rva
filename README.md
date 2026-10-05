@@ -1,0 +1,204 @@
+# RVA — Responsive Visual Asset
+
+**Internally structured. Externally singular.** RVA is a self-contained visual
+asset format and composition model. A single `.rva` file holds independently
+renderable resources (raster, vector, text, masks) plus the semantic structure
+and responsive constraints needed to *recompose itself* for arbitrary rendering
+dimensions — so one asset serves everything from ultrawide to portrait without a
+pile of hand-maintained derivatives.
+
+> Status: **experimental / R&D**, not frozen. The signature, media type and some
+> schema details may change before a public `0.1`. See [`spec/`](spec).
+
+This repository is the platform-neutral half of RVA: the reference **core**,
+**CLI**, **WASM** and **C ABI** bindings, a **server**, and thin **platform
+adapters**, together with the conformance suite and test corpora.
+
+---
+
+## The model
+
+```
+.rva  →  parse  →  validate  →  resolve(width, height, environment)  →  ResolvedScene
+```
+
+- **Normative core** — parsing, validation, topology selection, constraint
+  solving and layout resolution. Deterministic by construction.
+- **`ResolvedScene`** — the interop boundary. The core decides **what** to draw;
+  each platform renderer decides **how** to draw it with its own graphics stack.
+
+**Determinism invariant**
+
+```
+same .rva + same viewport + same spec version + same resolver profile
+  = same ResolvedScene
+```
+
+The reference resolver profile is `rva-resolve/0.4` (`rva_core::RESOLVER_PROFILE`).
+Resolution semantics are stable across runtimes; rasterized pixels may differ.
+Text layout uses a fixed, platform-independent advance model
+(`core/src/fonts.rs`); real system fonts are used only when *drawing*.
+
+### Scene model (`core/src/model.rs`)
+
+| Concept | Purpose |
+|---|---|
+| `designSpace` | Intrinsic authoring canvas (master dimensions). |
+| `resources` | `id → path` map; resource ids are filename-independent. |
+| `text` | Semantic, reflowable text resources with size bounds and styling. |
+| `elements` | Raster / vector / text / group / mask with role, priority, crop policy, mask, focal regions, visibility and opacity. |
+| `topologies` | Alternative compositions selected by aspect-ratio range; each has a background and per-element layout. |
+| `constraints` | Authored relationships between elements (`gap`, `align`, `contain`, `no-overlap`), hard or soft. |
+| `fallback` | Canonical flattened representation + fit policy. |
+
+Backgrounds are either a resource id (photo) or a procedural **paint** (solid
+colour or linear gradient). Element opacity and text colour/background/line
+height/letter & word spacing/alignment are part of the model, and text spacing
+participates in the deterministic advance model so wrapping is identical
+everywhere.
+
+### Primitive API (normative)
+
+The five operations every binding implements with identical semantics:
+
+| Primitive | Input | Output |
+|---|---|---|
+| `open` | bytes | handle |
+| `describe` | handle | string |
+| `resolve` | handle, width, height | ResolvedScene (JSON) |
+| `resource` | handle, reference | bytes |
+| `has_resource` | handle, reference | boolean |
+
+`relative_for` and `render_png` are non-normative convenience helpers. The
+smaller the normative surface, the better.
+
+---
+
+## Repository layout
+
+```
+rva/
+├── spec/                 # container + model specification (working draft)
+│   ├── overview.md       # core model & primitive API
+│   └── container.md      # .rva binary container
+├── core/                 # rva-core: parser, validator, resolver, reference renderer
+├── cli/                  #   `rva` developer CLI
+├── wasm/                 # rva-wasm: WebAssembly bindings (parse + resolve)
+├── ffi/                  # rva-ffi: stable C ABI (Swift/Kotlin/Flutter/C)
+├── server/               # rva-server: native resolve + rasterize over HTTP
+├── adapters/             # platform adapters + contract.json
+│   ├── contract.json     #   frozen primitive contract (all adapters)
+│   ├── types/  web/  node/  react/  vue/  svelte/  react-native/
+│   └── swift/  kotlin/  flutter/
+├── examples/             # runnable consumers per adapter
+├── conformance/          # cross-runtime ResolvedScene equality harness
+├── corpus/               # torture corpus build + adversarial verification
+├── rva-demo-assets/      # hand-authored PoC asset + JSON schema
+├── rva-torture-corpus-assets/  # 15 adversarial source fixtures
+└── Cargo.toml            # Rust workspace: core, cli, wasm, ffi, server
+```
+
+Rust workspace members: `core`, `cli`, `wasm`, `ffi`, `server`.
+npm workspaces: the JS adapters and examples (`package.json`).
+
+---
+
+## Getting started
+
+### Rust core / CLI
+
+```bash
+cargo build                 # build the whole workspace
+cargo test                  # core unit + integration tests
+cargo build -p rva-cli      # build the `rva` binary
+```
+
+The CLI operates on a package directory, a `scene.json`, or a packaged `.rva`
+(`--asset`, default `rva-demo-assets`):
+
+```bash
+cargo run -p rva-cli -- validate
+cargo run -p rva-cli -- inspect --width 1280 --height 720
+cargo run -p rva-cli -- inspect --width 1280 --height 720 --compact   # byte-stable JSON
+cargo run -p rva-cli -- render  --width 1280 --height 720 --out out/hero.png
+cargo run -p rva-cli -- pack    --out hero.rva --optimize
+cargo run -p rva-cli -- unpack  --out-dir out/hero --asset hero.rva
+```
+
+### WebAssembly + JS adapters
+
+```bash
+rustup target add wasm32-unknown-unknown
+cargo install wasm-bindgen-cli --version 0.2.129
+npm install
+npm run build:wasm          # build the WASM bindings (web + node)
+npm run build               # build the JS adapter packages
+npm run generate:types      # regenerate shared TypeScript types
+```
+
+### Server
+
+```bash
+cargo run -p rva-server
+# endpoints: /health  /describe/:id  /resolve/:id?w=&h=  /render/:id?w=&h=
+```
+
+### Native adapters
+
+- **Swift** — `adapters/swift` (FFI + Swift Package), `examples/swift`
+- **Kotlin/Android** — `adapters/kotlin` (JNI + AAR), `examples/kotlin`
+- **Flutter** — `adapters/flutter` (Dart FFI widget), `examples/flutter`
+
+All native adapters bind to the same `rva-ffi` C ABI and the same core.
+
+---
+
+## Conformance & testing
+
+RVA conformance is **two-dimensional**: cross-runtime equality plus
+semantic/spec invariants.
+
+```bash
+./conformance/run.sh        # native (CLI) == WASM (@rva/node) == C ABI (rva_ffi)
+./corpus/run.sh             # build the 15-fixture torture corpus and verify
+```
+
+- `conformance/` resolves a fixture across a continuous size matrix through
+  three independent runtimes and asserts **byte-identical** `ResolvedScene` JSON.
+- `corpus/` builds the adversarial fixtures and checks semantic invariants,
+  topology boundaries, malformed/missing resources and fallback behavior.
+
+`rva-demo-assets/07_schema/rva-scene.schema.json` is the working JSON schema.
+
+---
+
+## Container
+
+`.rva` is a self-contained binary container: magic `RVA1`, versioned header,
+optional zlib-compressed manifest (JSON) and resource data region, per-blob
+SHA-256 integrity, and hard guardrails against malformed or pathological input.
+See [`spec/container.md`](spec/container.md).
+
+| Property | Value |
+|---|---|
+| Extension | `.rva` |
+| Provisional media type | `application/x-rva` (target: `image/rva`) |
+| Container version | `1.1` |
+| Resolver profile | `rva-resolve/0.4` |
+
+## Security
+
+`.rva` is **untrusted input**. The parser is panic-safe across the C ABI, bounds
+every offset/length, caps decompressed sizes and rejects malformed input. No
+embedded executable scripts, no implicit network fetches, SVG features are
+constrained, and embedded resources cannot escape the package sandbox.
+
+## License
+
+MIT. See [`Cargo.toml`](Cargo.toml) and the individual adapter manifests.
+
+---
+
+The full feasibility rationale and roadmap live in
+`RVA_Product_Requirements_Document_v1.1.docx`; [`spec/overview.md`](spec/overview.md)
+is the living description of the implementation.

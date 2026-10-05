@@ -1,0 +1,19 @@
+{
+  "name": "@rva/node",
+  "version": "0.1.0",
+  "description": "Node.js/server adapter for RVA: resolve and render .rva assets.",
+  "main": "dist/index.js",
+  "types": "dist/index.d.ts",
+  "files": [
+    "dist"
+  ],
+  "scripts": {
+    "build": "tsc -p . && rm -rf dist/pkg && cp -R src/pkg dist/pkg",
+    "build:wasm": "node build.js",
+    "clean": "rm -rf dist"
+  },
+  "dependencies": {
+    "@rva/types": "*"
+  },
+  "license": "MIT"
+}

@@ -1,0 +1,10 @@
+{
+  "name": "@rva/svelte",
+  "platform": "svelte",
+  "language": "svelte",
+  "runtime": "browser",
+  "status": "implemented",
+  "core_bridge": "wraps @rva/web",
+  "entry": "src/RVAImage.svelte",
+  "example": "examples/svelte"
+}

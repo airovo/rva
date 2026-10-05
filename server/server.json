@@ -1,0 +1,11 @@
+{
+  "name": "rva-server",
+  "platform": "server",
+  "language": "rust",
+  "runtime": "native",
+  "status": "implemented",
+  "core_bridge": "direct (rva-core)",
+  "entry": "src/lib.rs",
+  "endpoints": ["/health", "/describe/:id", "/resolve/:id?w=&h=", "/render/:id?w=&h="],
+  "example": null
+}

@@ -1,0 +1,26 @@
+{
+  "name": "@rva/web",
+  "version": "0.1.0",
+  "description": "Framework-neutral <rva-image> web component backed by the RVA WASM core.",
+  "type": "module",
+  "main": "dist/rva-image.js",
+  "types": "dist/rva-image.d.ts",
+  "exports": {
+    ".": {
+      "types": "./dist/rva-image.d.ts",
+      "default": "./dist/rva-image.js"
+    }
+  },
+  "files": [
+    "dist"
+  ],
+  "scripts": {
+    "build": "tsc -p . && rm -rf dist/pkg && cp -R src/pkg dist/pkg",
+    "build:wasm": "./build.sh",
+    "clean": "rm -rf dist"
+  },
+  "dependencies": {
+    "@rva/types": "*"
+  },
+  "license": "MIT"
+}

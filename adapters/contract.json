@@ -1,0 +1,46 @@
+{
+  "version": "0.1.0",
+  "core": "rva-core",
+  "resolverProfile": "rva-resolve/0.4",
+  "normativePipeline": [
+    ".rva",
+    "parse",
+    "validate",
+    "resolve(width, height, environment)",
+    "ResolvedScene"
+  ],
+  "invariant": "same .rva + same viewport + same spec version + same resolver profile = same ResolvedScene",
+  "primitives": {
+    "open": {
+      "input": ["bytes"],
+      "output": "handle",
+      "description": "Parse and integrity-validate a .rva package. Normative."
+    },
+    "describe": {
+      "input": ["handle"],
+      "output": "string",
+      "description": "Human-readable asset summary. Normative (informational)."
+    },
+    "resolve": {
+      "input": ["handle", "width", "height"],
+      "output": "ResolvedScene (JSON)",
+      "description": "Deterministic scene of absolute element geometry. Normative; identical across runtimes."
+    },
+    "resource": {
+      "input": ["handle", "reference"],
+      "output": "bytes",
+      "description": "Raw resource bytes for a declared id. Normative."
+    },
+    "has_resource": {
+      "input": ["handle", "reference"],
+      "output": "boolean",
+      "description": "Whether a declared resource id exists. Normative."
+    }
+  },
+  "convenience": {
+    "relative_for": "NON-NORMATIVE. Filename/MIME helper. Not a fundamental RVA operation; may be folded into resolve metadata or removed before the public contract is frozen.",
+    "render_png": "NON-NORMATIVE. Reference rasterization (resvg) for CLI/server/RN convenience. Conformance does not require PNG support."
+  },
+  "rendererResponsibility": "Draw the ResolvedScene with the platform graphics stack. Glyph rasterization and pixels may differ; resolution semantics must not.",
+  "typography": "Resolution uses a deterministic, platform-independent advance model (see spec/overview.md). System fonts affect rendering only."
+}

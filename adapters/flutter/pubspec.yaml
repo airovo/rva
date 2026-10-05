@@ -1,0 +1,17 @@
+name: rva_flutter
+description: RVA Flutter adapter — dart:ffi binding to the shared Rust core.
+version: 0.1.0
+publish_to: none
+
+environment:
+  sdk: ">=3.4.0 <4.0.0"
+
+dependencies:
+  flutter:
+    sdk: flutter
+  ffi: ^2.1.3
+  flutter_svg: ^2.0.10
+
+dev_dependencies:
+  flutter_test:
+    sdk: flutter

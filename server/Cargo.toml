@@ -1,0 +1,22 @@
+[package]
+name = "rva-server"
+description = "RVA server-side renderer: resolve and rasterize .rva assets natively, with caching and an HTTP endpoint."
+version.workspace = true
+edition.workspace = true
+license.workspace = true
+
+[lib]
+name = "rva_server"
+path = "src/lib.rs"
+
+[[bin]]
+name = "rva-server"
+path = "src/main.rs"
+
+[dependencies]
+rva-core = { path = "../core" }
+axum = "0.7"
+tokio = { version = "1", features = ["rt-multi-thread", "macros", "net", "signal"] }
+serde = { version = "1", features = ["derive"] }
+serde_json = "1"
+clap = { version = "4", features = ["derive"] }

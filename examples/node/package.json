@@ -1,0 +1,13 @@
+{
+  "name": "rva-example-node",
+  "version": "0.1.0",
+  "private": true,
+  "description": "Example: render a .rva asset with the @rva/node adapter.",
+  "scripts": {
+    "start": "node index.js"
+  },
+  "dependencies": {
+    "@rva/node": "*"
+  },
+  "license": "MIT"
+}
