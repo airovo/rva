@@ -14,6 +14,11 @@ pub struct Scene {
     pub description: Option<String>,
     #[serde(rename = "designSpace", default)]
     pub design_space: Option<DesignSpace>,
+    /// Optional solid base colour behind every topology background. Lets an
+    /// asset with a transparent/partly-transparent background paint over a
+    /// deterministic scene colour instead of black/white. Default: transparent.
+    #[serde(default)]
+    pub background: Option<String>,
     #[serde(default)]
     pub resources: BTreeMap<String, String>,
     #[serde(default)]
@@ -54,7 +59,11 @@ pub struct TextResource {
     /// Fill colour (CSS hex). Falls back to the role default when absent.
     #[serde(default)]
     pub color: Option<String>,
-    /// Optional solid background drawn behind the text box.
+    /// Fill paint (colour or gradient). Takes precedence over `color`.
+    #[serde(default)]
+    pub fill: Option<Paint>,
+    /// Optional solid background drawn behind the text box (supports alpha via
+    /// `#RRGGBBAA`).
     #[serde(default)]
     pub background: Option<String>,
     /// Line height as a multiple of font size (default 1.25). Affects the
@@ -86,6 +95,10 @@ pub struct Element {
     pub id: String,
     #[serde(rename = "type")]
     pub kind: String,
+    /// Human-readable display name. Independent of `id` (renaming must not
+    /// change references) and optional.
+    #[serde(default)]
+    pub name: Option<String>,
     #[serde(default)]
     pub role: Option<String>,
     #[serde(default)]
@@ -102,6 +115,14 @@ pub struct Element {
     /// transparent-background cutouts.
     #[serde(default)]
     pub opacity: Option<f32>,
+    /// Authoring-only: when true, editors must not manipulate this element.
+    /// Does not change runtime semantics (renderers ignore it).
+    #[serde(default)]
+    pub locked: Option<bool>,
+    /// Parent group id (for `type: "group"` containers). Children inherit the
+    /// group's offset, opacity and visibility.
+    #[serde(default)]
+    pub parent: Option<String>,
 }
 
 #[derive(Debug, Clone, Serialize, Deserialize, TS)]
@@ -122,8 +143,26 @@ pub struct Topology {
     pub when: When,
     #[serde(default)]
     pub background: Option<Background>,
+    /// Pan of an image background within the canvas: `(0,0)` shows the top-left
+    /// of the image, `(1,1)` the bottom-right, `(0.5,0.5)` centred (default).
+    /// Lets important parts of a photo stay visible in different topologies.
+    #[serde(rename = "backgroundFocus", default)]
+    pub background_focus: Option<Focus>,
     #[serde(default)]
     pub layout: BTreeMap<String, Layout>,
+}
+
+/// Normalized focus/pan point for a cover-fit image, `0..1` on each axis.
+#[derive(Debug, Clone, Copy, PartialEq, Serialize, Deserialize, TS)]
+pub struct Focus {
+    pub x: f32,
+    pub y: f32,
+}
+
+impl Default for Focus {
+    fn default() -> Self {
+        Focus { x: 0.5, y: 0.5 }
+    }
 }
 
 /// A topology background. Either a declared resource id (legacy/photo) or a
@@ -149,6 +188,9 @@ pub enum Paint {
     LinearGradient {
         /// Direction in degrees (0 = left→right, 90 = top→bottom).
         angle: f32,
+        stops: Vec<GradientStop>,
+    },
+    RadialGradient {
         stops: Vec<GradientStop>,
     },
 }
@@ -227,6 +269,10 @@ pub struct Layout {
     pub min_scale: Option<f32>,
     #[serde(rename = "maxScale", default)]
     pub max_scale: Option<f32>,
+    /// Per-topology visibility toggle (independent of the element's global
+    /// `visibility`). When true the element is hidden in this topology only.
+    #[serde(default)]
+    pub hidden: Option<bool>,
 }
 
 #[derive(Debug, Clone, Serialize, Deserialize, TS)]

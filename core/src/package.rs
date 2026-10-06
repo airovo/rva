@@ -165,6 +165,11 @@ pub fn pack_scene_with(asset: &Asset, scene: &Scene, options: PackOptions) -> Re
     let mut data: Vec<u8> = Vec::new();
     #[cfg(feature = "packaging")]
     let mut updated_paths: Vec<(String, String)> = Vec::new();
+    #[cfg(feature = "packaging")]
+    let design_width = scene
+        .design_space
+        .map(|space| space.width.max(1.0))
+        .unwrap_or(1920.0);
 
     for (id, rel) in &scene.resources {
         let source = if id == "fallback" || id == "fallbackResource" {
@@ -179,7 +184,8 @@ pub fn pack_scene_with(asset: &Asset, scene: &Scene, options: PackOptions) -> Re
 
         #[cfg(feature = "packaging")]
         if options.optimize && !mask_ids.contains_key(id.as_str()) {
-            if let Some((new_path, new_bytes)) = transcode(&path, &bytes, options) {
+            let target = resource_target(&scene, id, design_width);
+            if let Some((new_path, new_bytes)) = optimize_resource(&path, &bytes, target, options) {
                 path = new_path;
                 bytes = new_bytes;
                 updated_paths.push((id.clone(), path.clone()));
@@ -286,20 +292,84 @@ fn inflate_limited(bytes: &[u8], limit: u64) -> Result<Vec<u8>> {
     Ok(out)
 }
 
-/// Re-encode a PNG resource to the smallest of lossless WebP and (for opaque
-/// images, when lossy is allowed) JPEG. Returns `None` if nothing is smaller.
+/// Largest pixel width a resource is ever displayed at, across all topologies
+/// (`None` if the resource is not referenced by any element/background).
 #[cfg(feature = "packaging")]
-fn transcode(path: &str, bytes: &[u8], options: PackOptions) -> Option<(String, Vec<u8>)> {
-    if !path.to_ascii_lowercase().ends_with(".png") {
+fn resource_target(scene: &Scene, id: &str, design_width: f32) -> Option<f32> {
+    let mut max_width = 0.0f32;
+    let mut found = false;
+
+    for topology in &scene.topologies {
+        if let Some(crate::model::Background::Resource(resource)) = &topology.background {
+            if resource == id {
+                max_width = max_width.max(design_width);
+                found = true;
+            }
+        }
+        for element in &scene.elements {
+            let uses = element.id == id
+                || element.mask.as_deref() == Some(id)
+                || element.role.as_deref() == Some(id);
+            if !uses {
+                continue;
+            }
+            if let Some(layout) = topology.layout.get(&element.id) {
+                max_width = max_width.max(layout.w * design_width);
+                found = true;
+            }
+        }
+    }
+
+    if scene
+        .fallback
+        .as_ref()
+        .is_some_and(|fallback| fallback.resource == id)
+    {
+        max_width = max_width.max(design_width);
+        found = true;
+    }
+
+    found.then_some(max_width)
+}
+
+/// Downscale a raster to its displayed size (×2 for hi-dpi) and re-encode to the
+/// smallest of lossless WebP / lossy WebP / JPEG. Returns `None` when nothing
+/// improves on the original bytes.
+#[cfg(feature = "packaging")]
+fn optimize_resource(
+    path: &str,
+    bytes: &[u8],
+    target_width: Option<f32>,
+    options: PackOptions,
+) -> Option<(String, Vec<u8>)> {
+    // Oversample factor: never keep more than 2× the displayed pixels.
+    const MAX_SCALE: f32 = 2.0;
+
+    let decoded = image::load_from_memory(bytes).ok()?;
+    let mut rgba = decoded.to_rgba8();
+    let (orig_w, orig_h) = (rgba.width(), rgba.height());
+    if orig_w == 0 || orig_h == 0 {
         return None;
     }
-    let image = image::load_from_memory_with_format(bytes, image::ImageFormat::Png).ok()?;
-    let rgba = image.to_rgba8();
+
+    let mut resized = false;
+    if let Some(display_width) = target_width {
+        let cap_w = (display_width * MAX_SCALE).ceil().max(1.0) as u32;
+        if cap_w < orig_w {
+            let cap_h = ((cap_w as f32) * (orig_h as f32) / (orig_w as f32)).round().max(1.0) as u32;
+            rgba = image::imageops::resize(&rgba, cap_w, cap_h, image::imageops::FilterType::Lanczos3);
+            resized = true;
+        }
+    }
     let (width, height) = (rgba.width(), rgba.height());
 
     let mut best: Option<(&'static str, Vec<u8>)> = None;
     let mut consider = |ext: &'static str, candidate: Vec<u8>| {
-        if candidate.len() + 32 >= bytes.len() {
+        if candidate.len() >= bytes.len() {
+            return;
+        }
+        // Without a resize, require a meaningful saving.
+        if !resized && candidate.len() + 32 >= bytes.len() {
             return;
         }
         if best
@@ -315,8 +385,14 @@ fn transcode(path: &str, bytes: &[u8], options: PackOptions) -> Option<(String, 
         consider("webp", webp);
     }
 
-    // Lossy JPEG for fully opaque images (no alpha channel needed).
     if !options.lossless {
+        // Lossy WebP — preserves alpha and is by far the biggest win for
+        // photographic rasters (including transparent cutouts).
+        if let Some(webp) = encode_webp_lossy(&rgba, options.quality) {
+            consider("webp", webp);
+        }
+
+        // Lossy JPEG for fully opaque images (no alpha channel needed).
         let opaque = rgba.pixels().all(|pixel| pixel.0[3] == 255);
         if opaque {
             if let Some(jpeg) = encode_jpeg(rgba.as_raw(), width, height, options.quality) {
@@ -332,6 +408,13 @@ fn transcode(path: &str, bytes: &[u8], options: PackOptions) -> Option<(String, 
             .replace('\\', "/");
         (new_path, out)
     })
+}
+
+#[cfg(feature = "packaging")]
+fn encode_webp_lossy(rgba: &image::RgbaImage, quality: u8) -> Option<Vec<u8>> {
+    let encoder = webp::Encoder::from_rgba(rgba.as_raw(), rgba.width(), rgba.height());
+    let encoded = encoder.encode(f32::from(quality.clamp(1, 100)));
+    Some(encoded.to_vec())
 }
 
 #[cfg(feature = "packaging")]

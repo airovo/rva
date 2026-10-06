@@ -70,6 +70,83 @@ const SCENE: &str = r##"{
   ]
 }"##;
 
+fn hidden_bg_scene(background: &str) -> String {
+    format!(
+        r##"{{
+  "format": "RVA",
+  "formatVersion": "0.1-draft",
+  "name": "Hidden background",
+  "designSpace": {{ "width": 1280, "height": 720 }},
+  "resources": {{ "bg": "res/bg.png" }},
+  "text": {{}},
+  "elements": [
+    {{ "id": "background", "type": "raster", "role": "background", "visibility": "hidden", "focalRegions": [] }}
+  ],
+  "topologies": [
+    {{
+      "id": "base",
+      "when": {{}},
+      "background": {background},
+      "layout": {{ "background": {{ "x": 0.0, "y": 0.0, "w": 1.0 }} }}
+    }}
+  ]
+}}"##
+    )
+}
+
+#[test]
+fn hidden_background_element_suppresses_an_image_background() {
+    // Image mode is backed by the background element, so hiding it hides it.
+    let asset = scratch_scene(&hidden_bg_scene("\"bg\""));
+    let fonts = Fonts::load_system();
+    let resolved = resolve(&asset, &fonts, 1280, 720).unwrap();
+    assert!(
+        resolved.background.is_none(),
+        "hidden background element must suppress an image background"
+    );
+}
+
+#[test]
+fn hidden_background_element_does_not_suppress_solid_or_gradient() {
+    for paint in [
+        r##"{ "type": "color", "color": "#0A0F1C" }"##,
+        r##"{ "type": "linearGradient", "angle": 90, "stops": [ { "offset": 0, "color": "#000000" }, { "offset": 1, "color": "#ffffff" } ] }"##,
+    ] {
+        let asset = scratch_scene(&hidden_bg_scene(paint));
+        let fonts = Fonts::load_system();
+        let resolved = resolve(&asset, &fonts, 1280, 720).unwrap();
+        assert!(
+            resolved.background.is_some(),
+            "solid/gradient backgrounds are independent of the background element"
+        );
+    }
+}
+
+#[test]
+fn radial_gradient_background_resolves() {
+    let scene = r##"{
+      "format": "RVA",
+      "formatVersion": "0.1-draft",
+      "designSpace": { "width": 1280, "height": 720 },
+      "resources": {},
+      "text": {},
+      "elements": [],
+      "topologies": [{
+        "id": "base",
+        "when": {},
+        "background": { "type": "radialGradient", "stops": [ { "offset": 0, "color": "#FFFFFF" }, { "offset": 1, "color": "#000000" } ] },
+        "layout": {}
+      }]
+    }"##;
+    let asset = scratch_scene(scene);
+    let fonts = Fonts::load_system();
+    let resolved = resolve(&asset, &fonts, 1280, 720).unwrap();
+    match resolved.background.expect("background").kind {
+        ItemKind::Paint { paint } => assert!(matches!(paint, Paint::RadialGradient { .. })),
+        other => panic!("expected paint background, got {other:?}"),
+    }
+}
+
 #[test]
 fn painted_background_and_styled_text_resolve() {
     let asset = scratch_scene(SCENE);

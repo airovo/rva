@@ -60,21 +60,42 @@ pub fn build_svg(asset: &Asset, resolved: &ResolvedScene) -> Result<String> {
     let mut defs = String::new();
     let mut body = String::new();
 
+    // Optional solid base colour behind the background (else transparent).
+    let base_rect = resolved
+        .base_color
+        .as_ref()
+        .map(|color| format!("<rect x=\"0\" y=\"0\" width=\"{w}\" height=\"{h}\" fill=\"{color}\"/>"))
+        .unwrap_or_default();
+
     if let Some(background) = &resolved.background {
         match &background.kind {
-            ItemKind::Image { resource, fit } => {
+            ItemKind::Image { resource, fit, focus } => {
                 let uri = data_uri(
                     &asset.reference_bytes(resource)?,
                     &asset.relative_for(resource),
                 );
-                let par = if fit == "cover" {
-                    "xMidYMid slice"
+                let (iw, ih) = asset.intrinsic_size(resource).unwrap_or((0.0, 0.0));
+                if fit == "cover" && iw > 0.0 && ih > 0.0 {
+                    // Pan via focus instead of always centering.
+                    let fx = focus.map(|f| f.x).unwrap_or(0.5);
+                    let fy = focus.map(|f| f.y).unwrap_or(0.5);
+                    let scale = (w as f32 / iw).max(h as f32 / ih);
+                    let dw = iw * scale;
+                    let dh = ih * scale;
+                    let dx = (w as f32 - dw) * fx;
+                    let dy = (h as f32 - dh) * fy;
+                    defs.push_str(&format!(
+                        "<clipPath id=\"bgclip\"><rect x=\"0\" y=\"0\" width=\"{w}\" height=\"{h}\"/></clipPath>"
+                    ));
+                    body.push_str(&format!(
+                        "<g clip-path=\"url(#bgclip)\"><image x=\"{dx}\" y=\"{dy}\" width=\"{dw}\" height=\"{dh}\" preserveAspectRatio=\"none\" href=\"{uri}\" xlink:href=\"{uri}\"/></g>"
+                    ));
                 } else {
-                    "none"
-                };
-                body.push_str(&format!(
-                    "<image x=\"0\" y=\"0\" width=\"{w}\" height=\"{h}\" preserveAspectRatio=\"{par}\" href=\"{uri}\" xlink:href=\"{uri}\"/>"
-                ));
+                    let par = if fit == "cover" { "xMidYMid slice" } else { "none" };
+                    body.push_str(&format!(
+                        "<image x=\"0\" y=\"0\" width=\"{w}\" height=\"{h}\" preserveAspectRatio=\"{par}\" href=\"{uri}\" xlink:href=\"{uri}\"/>"
+                    ));
+                }
             }
             ItemKind::Paint { paint } => {
                 let fill = paint_fill(paint, &mut defs, "bg");
@@ -132,6 +153,7 @@ pub fn build_svg(asset: &Asset, resolved: &ResolvedScene) -> Result<String> {
                 line_height,
                 ascent,
                 color,
+                fill: fill_paint,
                 background,
                 letter_spacing,
                 word_spacing,
@@ -140,11 +162,14 @@ pub fn build_svg(asset: &Asset, resolved: &ResolvedScene) -> Result<String> {
             } => {
                 let family = Fonts::normalize_family(font_family);
                 let ascent = *ascent;
-                let fill = color.clone().unwrap_or_else(|| match item.role.as_deref() {
-                    Some("subheadline") => "#334155".to_string(),
-                    Some("headline") => "#0F172A".to_string(),
-                    _ => "#0F172A".to_string(),
-                });
+                let fill = match fill_paint {
+                    Some(paint) => paint_fill(paint, &mut defs, &item.id),
+                    None => color.clone().unwrap_or_else(|| match item.role.as_deref() {
+                        Some("subheadline") => "#334155".to_string(),
+                        Some("headline") => "#0F172A".to_string(),
+                        _ => "#0F172A".to_string(),
+                    }),
+                };
 
                 if let Some(background) = background {
                     body.push_str(&format!(
@@ -196,7 +221,7 @@ pub fn build_svg(asset: &Asset, resolved: &ResolvedScene) -> Result<String> {
     Ok(format!(
         "<svg xmlns=\"http://www.w3.org/2000/svg\" xmlns:xlink=\"http://www.w3.org/1999/xlink\" width=\"{w}\" height=\"{h}\" viewBox=\"0 0 {w} {h}\">\
          <defs>{defs}</defs>\
-         <rect width=\"{w}\" height=\"{h}\" fill=\"#ffffff\"/>\
+         {base_rect}\
          {body}</svg>"
     ))
 }
@@ -226,6 +251,25 @@ fn paint_fill(paint: &Paint, defs: &mut String, id_prefix: &str) -> String {
             }
             defs.push_str(&format!(
                 "<linearGradient id=\"{id}\" x1=\"{x1}\" y1=\"{y1}\" x2=\"{x2}\" y2=\"{y2}\">{stops_svg}</linearGradient>"
+            ));
+            format!("url(#{id})")
+        }
+        Paint::RadialGradient { stops } => {
+            let safe: String = id_prefix
+                .chars()
+                .map(|c| if c.is_ascii_alphanumeric() { c } else { '-' })
+                .collect();
+            let id = format!("rg-{safe}");
+            let mut stops_svg = String::new();
+            for stop in stops {
+                stops_svg.push_str(&format!(
+                    "<stop offset=\"{}\" stop-color=\"{}\"/>",
+                    stop.offset.clamp(0.0, 1.0),
+                    stop.color
+                ));
+            }
+            defs.push_str(&format!(
+                "<radialGradient id=\"{id}\" cx=\"0.5\" cy=\"0.5\" r=\"0.5\">{stops_svg}</radialGradient>"
             ));
             format!("url(#{id})")
         }

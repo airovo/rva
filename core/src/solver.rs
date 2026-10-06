@@ -521,6 +521,7 @@ mod tests {
             kind: ItemKind::Image {
                 resource: id.to_string(),
                 fit: "none".to_string(),
+                focus: None,
             },
         }
     }

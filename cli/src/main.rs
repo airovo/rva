@@ -295,6 +295,7 @@ fn fallback_scene(asset: &Asset, width: u32, height: u32) -> Result<ResolvedScen
         degraded: false,
         hidden: Vec::new(),
         viability: 0.0,
+        base_color: None,
         background: Some(ResolvedItem {
             id: "fallback".to_string(),
             role: Some("fallback".to_string()),
@@ -311,6 +312,7 @@ fn fallback_scene(asset: &Asset, width: u32, height: u32) -> Result<ResolvedScen
             kind: ItemKind::Image {
                 resource: fallback.resource.clone(),
                 fit: fallback.fit.clone(),
+                focus: None,
             },
         }),
         items: Vec::new(),

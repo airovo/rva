@@ -28,6 +28,19 @@ pub fn validate(asset: &Asset) -> Vec<String> {
                 element.id, element.kind
             ));
         }
+        if let Some(parent) = &element.parent {
+            match scene.elements.iter().find(|candidate| &candidate.id == parent) {
+                None => issues.push(format!(
+                    "element '{}' references missing group '{parent}'",
+                    element.id
+                )),
+                Some(group) if group.kind != "group" => issues.push(format!(
+                    "element '{}' parent '{parent}' is not a group",
+                    element.id
+                )),
+                _ => {}
+            }
+        }
     }
 
     for (id, relative) in &scene.resources {

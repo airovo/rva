@@ -1,6 +1,6 @@
 use crate::error::{Result, RvaError};
 use crate::fonts::Fonts;
-use crate::model::{Background, FocalRegion, Paint, Scene, TextResource, Topology};
+use crate::model::{Background, FocalRegion, Focus, Paint, Scene, TextResource, Topology};
 use crate::resources::Asset;
 use crate::solver;
 use serde::Serialize;
@@ -21,6 +21,10 @@ pub struct ResolvedScene {
     pub hidden: Vec<String>,
     /// 0..1 quality score for the selected composition.
     pub viability: f32,
+    /// Optional solid base colour drawn behind the (topology) background.
+    #[serde(rename = "baseColor", skip_serializing_if = "Option::is_none")]
+    #[ts(optional)]
+    pub base_color: Option<String>,
     pub background: Option<ResolvedItem>,
     pub items: Vec<ResolvedItem>,
     pub diagnostics: Vec<String>,
@@ -58,6 +62,9 @@ pub enum ItemKind {
     Image {
         resource: String,
         fit: String,
+        #[serde(skip_serializing_if = "Option::is_none")]
+        #[ts(optional)]
+        focus: Option<Focus>,
     },
     Vector {
         resource: String,
@@ -75,6 +82,9 @@ pub enum ItemKind {
         #[serde(skip_serializing_if = "Option::is_none")]
         #[ts(optional)]
         color: Option<String>,
+        #[serde(skip_serializing_if = "Option::is_none")]
+        #[ts(optional)]
+        fill: Option<Paint>,
         #[serde(skip_serializing_if = "Option::is_none")]
         #[ts(optional)]
         background: Option<String>,
@@ -194,6 +204,7 @@ pub fn resolve(asset: &Asset, fonts: &Fonts, width: u32, height: u32) -> Result<
         degraded: best.degraded(),
         hidden: best.hidden.clone(),
         viability: best.viability(),
+        base_color: scene.background.clone(),
         background: best.background.clone(),
         items: best.items.clone(),
         diagnostics,
@@ -310,8 +321,21 @@ fn layout_topology(
     let canvas_w = width as f32;
     let canvas_h = height as f32;
 
-    let background = topology.background.as_ref().map(|bg| match bg {
-        Background::Resource(resource) => ResolvedItem {
+    // The topology background has four modes: none, image, solid, gradient.
+    // Only the **image** mode is backed by the `background` element, so hiding
+    // that element hides an image background but never a solid/gradient one.
+    let background_element_hidden = scene.elements.iter().any(|element| {
+        (element.role.as_deref() == Some("background") || element.id == "background")
+            && (element.visibility.as_deref() == Some("hidden")
+                || topology
+                    .layout
+                    .get(&element.id)
+                    .and_then(|layout| layout.hidden)
+                    .unwrap_or(false))
+    });
+
+    let background = match &topology.background {
+        Some(Background::Resource(resource)) if !background_element_hidden => Some(ResolvedItem {
             id: "background".to_string(),
             role: Some("background".to_string()),
             z: -1,
@@ -327,9 +351,10 @@ fn layout_topology(
             kind: ItemKind::Image {
                 resource: resource.clone(),
                 fit: "cover".to_string(),
+                focus: topology.background_focus,
             },
-        },
-        Background::Paint(paint) => ResolvedItem {
+        }),
+        Some(Background::Paint(paint)) => Some(ResolvedItem {
             id: "background".to_string(),
             role: Some("background".to_string()),
             z: -1,
@@ -343,8 +368,9 @@ fn layout_topology(
             crop_policy: None,
             focal_regions: Vec::new(),
             kind: ItemKind::Paint { paint: paint.clone() },
-        },
-    });
+        }),
+        _ => None,
+    };
 
     let mut items = Vec::new();
     for (index, element) in scene.elements.iter().enumerate() {
@@ -353,8 +379,9 @@ fn layout_topology(
         // `visibility: "optional"` marks an element as expendable under
         // degradation; `visibility: "hidden"` removes it from the composition
         // entirely (an authoring hide toggle).
-        let is_hidden = element.visibility.as_deref() == Some("hidden");
-        if is_background || is_hidden || hidden.contains(&element.id) {
+        // Groups are containers: they contribute an offset/opacity/visibility to
+        // their descendants but are not drawn themselves.
+        if element.kind == "group" {
             continue;
         }
 
@@ -362,8 +389,21 @@ fn layout_topology(
             continue;
         };
 
-        let x = layout.x * canvas_w;
-        let y = layout.y * canvas_h;
+        // Hidden globally (all topologies) or hidden in this topology.
+        let is_hidden = element.visibility.as_deref() == Some("hidden")
+            || layout.hidden == Some(true);
+        if is_background || is_hidden || hidden.contains(&element.id) {
+            continue;
+        }
+
+        // Inherit ancestor-group offset, opacity and visibility.
+        let (gdx, gdy, gopacity, ghidden) = group_context(scene, element, topology, hidden);
+        if ghidden {
+            continue;
+        }
+
+        let x = (layout.x + gdx) * canvas_w;
+        let y = (layout.y + gdy) * canvas_h;
         let w = layout.w * canvas_w;
 
         let kind = match element.kind.as_str() {
@@ -387,6 +427,7 @@ fn layout_topology(
                             ascent,
                             lines,
                             color: text_resource.color.clone(),
+                            fill: text_resource.fill.clone(),
                             background: text_resource.background.clone(),
                             letter_spacing: text_resource.letter_spacing.unwrap_or(0.0).max(0.0),
                             word_spacing: text_resource.word_spacing.unwrap_or(0.0),
@@ -412,6 +453,7 @@ fn layout_topology(
                 ItemKind::Image {
                     resource,
                     fit: "none".to_string(),
+                    focus: None,
                 }
             }
         };
@@ -441,7 +483,7 @@ fn layout_topology(
             y,
             w,
             h,
-            opacity: element.opacity.unwrap_or(1.0).clamp(0.0, 1.0),
+            opacity: (element.opacity.unwrap_or(1.0).clamp(0.0, 1.0) * gopacity).clamp(0.0, 1.0),
             mask: element.mask.clone(),
             priority: element.priority.unwrap_or(0.0),
             crop_policy: element.crop_policy.clone(),
@@ -476,6 +518,7 @@ fn fallback_scene(
         kind: ItemKind::Image {
             resource: fallback.resource.clone(),
             fit: fallback.fit.clone(),
+            focus: None,
         },
     });
 
@@ -487,6 +530,7 @@ fn fallback_scene(
         degraded: false,
         hidden: Vec::new(),
         viability: 0.0,
+        base_color: asset.scene.background.clone(),
         background,
         items: Vec::new(),
         diagnostics,
@@ -501,6 +545,53 @@ fn lookup_text<'a>(
         .text
         .get(&element.id)
         .or_else(|| element.role.as_ref().and_then(|role| scene.text.get(role)))
+}
+
+/// Accumulated transform/opacity/visibility contributed by a chain of ancestor
+/// groups. Offsets are normalized (added to the element's own normalized x/y).
+fn group_context(
+    scene: &Scene,
+    element: &crate::model::Element,
+    topology: &Topology,
+    hidden: &[String],
+) -> (f32, f32, f32, bool) {
+    let mut dx = 0.0f32;
+    let mut dy = 0.0f32;
+    let mut opacity = 1.0f32;
+    let mut hidden_flag = false;
+
+    let mut current = element.parent.clone();
+    let mut guard = 0;
+    while let Some(parent_id) = current {
+        guard += 1;
+        if guard > 64 {
+            break; // defensive: malformed/cyclic parent chain
+        }
+        let Some(parent) = scene.elements.iter().find(|e| e.id == parent_id) else {
+            break;
+        };
+        let parent_hidden_here = topology
+            .layout
+            .get(&parent_id)
+            .and_then(|layout| layout.hidden)
+            .unwrap_or(false);
+        if parent.visibility.as_deref() == Some("hidden")
+            || parent_hidden_here
+            || hidden.iter().any(|id| id == &parent.id)
+        {
+            hidden_flag = true;
+        }
+        if let Some(op) = parent.opacity {
+            opacity *= op.clamp(0.0, 1.0);
+        }
+        if let Some(layout) = topology.layout.get(&parent_id) {
+            dx += layout.x;
+            dy += layout.y;
+        }
+        current = parent.parent.clone();
+    }
+
+    (dx, dy, opacity, hidden_flag)
 }
 
 fn lookup_resource(asset: &Asset, element: &crate::model::Element) -> Option<String> {

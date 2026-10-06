@@ -12,7 +12,7 @@ default = ["render", "packaging"]
 # draw glyphs with the platform font stack.
 render = ["dep:resvg", "dep:usvg", "dep:tiny-skia", "dep:base64", "dep:fontdb"]
 # Full image decode/encode for pack-time optimization (PNG -> WebP/JPEG).
-packaging = ["dep:image"]
+packaging = ["dep:image", "dep:webp"]
 
 [dependencies]
 serde = { version = "1", features = ["derive"] }
@@ -25,6 +25,9 @@ imagesize = "0.13"
 ts-rs = "10"
 
 image = { version = "0.25", default-features = false, features = ["png", "webp", "jpeg"], optional = true }
+# libwebp binding: lossy WebP (with alpha) — the big win for photo cutouts that
+# the `image` crate only encodes losslessly.
+webp = { version = "0.3", optional = true }
 resvg = { version = "0.45", optional = true }
 usvg = { version = "0.45", optional = true }
 tiny-skia = { version = "0.11", optional = true }
