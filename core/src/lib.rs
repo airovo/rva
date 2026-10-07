@@ -5,6 +5,7 @@
 //! deterministic scene of absolute element geometry. Platform adapters are
 //! responsible for turning that resolved scene into pixels.
 
+pub mod cta;
 pub mod error;
 pub mod fonts;
 pub mod model;
@@ -27,6 +28,10 @@ pub use fonts::Fonts;
 pub use model::Scene;
 #[cfg(feature = "render")]
 pub use render::{render_to_file, render_to_png};
-pub use resolve::{resolve, ItemKind, ResolvedItem, ResolvedScene};
+pub use cta::{overlaps as cta_overlaps, CtaOverlap};
+pub use model::{CtaRegion, CtaSource};
+pub use resolve::{
+    resolve, Bounds, ItemKind, ResolvedCtaRegion, ResolvedItem, ResolvedScene,
+};
 pub use resources::Asset;
 pub use validate::validate;

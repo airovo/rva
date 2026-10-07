@@ -5,6 +5,7 @@ import RVAFFI
 //
 // Uniform adapter surface (see adapters/contract.json):
 //   open(data)                 -> RVAImage
+//   open(source:)              -> RVAImage   (path | file:// | http(s)://)
 //   describe()                 -> String
 //   resolve(width:height:)     -> ResolvedScene
 //   resource(_ reference:)     -> Data
@@ -15,12 +16,14 @@ public enum RVAError: Error, CustomStringConvertible {
     case open(String)
     case resolve(String)
     case resource(String)
+    case source(String)
 
     public var description: String {
         switch self {
         case .open(let message): return "rva_open: \(message)"
         case .resolve(let message): return "rva_resolve: \(message)"
         case .resource(let message): return "rva_resource: \(message)"
+        case .source(let message): return "rva source: \(message)"
         }
     }
 }
@@ -38,6 +41,53 @@ public final class RVAImage {
             throw RVAError.open(Self.lastError())
         }
         self.handle = handle
+    }
+
+    /// Open from a filesystem path, a `file://` URL, an `http(s)://` URL or a
+    /// `data:` URL. Convenience over the normative `init(data:)`.
+    public convenience init(source: String) throws {
+        try self.init(data: RVAImage.readSource(source))
+    }
+
+    /// Read `.rva` bytes from a path, `file://`, `http(s)://` or `data:` URL.
+    public static func readSource(_ source: String) throws -> Data {
+        if source.hasPrefix("data:") {
+            return try decodeDataURL(source)
+        }
+        if let url = URL(string: source),
+           let scheme = url.scheme?.lowercased(),
+           scheme == "file" || scheme == "http" || scheme == "https" {
+            do {
+                return try Data(contentsOf: url)
+            } catch {
+                throw RVAError.source("could not read \(source): \(error.localizedDescription)")
+            }
+        }
+        // No recognised scheme: treat as a filesystem path (also covers
+        // Windows drive letters that URL(string:) mis-parses as a scheme).
+        do {
+            return try Data(contentsOf: URL(fileURLWithPath: source))
+        } catch {
+            throw RVAError.source("could not read \(source): \(error.localizedDescription)")
+        }
+    }
+
+    private static func decodeDataURL(_ source: String) throws -> Data {
+        guard let comma = source.firstIndex(of: ",") else {
+            throw RVAError.source("malformed data: URL")
+        }
+        let meta = source[source.index(source.startIndex, offsetBy: 5)..<comma].lowercased()
+        let payload = String(source[source.index(after: comma)...])
+        if meta.contains(";base64") {
+            guard let data = Data(base64Encoded: payload) else {
+                throw RVAError.source("invalid base64 data: URL")
+            }
+            return data
+        }
+        guard let decoded = payload.removingPercentEncoding else {
+            throw RVAError.source("invalid percent-encoding in data: URL")
+        }
+        return Data(decoded.utf8)
     }
 
     deinit {

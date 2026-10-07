@@ -4,7 +4,9 @@ import RVA
 // Example CLI for the Swift adapter: load one .rva and render the canonical
 // viewport matrix to PNG using Core Graphics.
 //
-//   swift run rva-render <hero.rva> [out-dir]
+//   swift run rva-render <asset> [out-dir]
+//
+// <asset> may be a filesystem path, a file:// URL or an http(s):// URL.
 
 let arguments = CommandLine.arguments
 guard arguments.count >= 2 else {
@@ -16,8 +18,7 @@ let assetPath = arguments[1]
 let outDir = arguments.count >= 3 ? arguments[2] : "out"
 try? FileManager.default.createDirectory(atPath: outDir, withIntermediateDirectories: true)
 
-let data = try Data(contentsOf: URL(fileURLWithPath: assetPath))
-let image = try RVAImage(data: data)
+let image = try RVAImage(source: assetPath)
 print(image.describe())
 
 let sizes: [(Int, Int, String)] = [

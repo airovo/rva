@@ -1,4 +1,4 @@
-use crate::model::Background;
+use crate::model::{Background, CtaSource};
 use crate::resources::Asset;
 
 /// Lightweight structural validation for prototype assets. Returns a list of
@@ -75,6 +75,74 @@ pub fn validate(asset: &Asset) -> Vec<String> {
                     "topology '{}' lays out unknown element '{element_id}'",
                     topology.id
                 ));
+            }
+        }
+    }
+
+    let mut seen_regions: Vec<&str> = Vec::new();
+    for region in &scene.cta_regions {
+        if region.id.trim().is_empty() {
+            issues.push("cta region id must not be empty".to_string());
+        }
+        if seen_regions.contains(&region.id.as_str()) {
+            issues.push(format!("duplicate cta region id '{}'", region.id));
+        }
+        seen_regions.push(region.id.as_str());
+
+        if let Some(padding) = region.padding {
+            if !padding.is_finite() || padding < 0.0 {
+                issues.push(format!(
+                    "cta region '{}' padding must be a non-negative finite number",
+                    region.id
+                ));
+            }
+        }
+
+        let element_exists =
+            |id: &str| scene.elements.iter().any(|element| element.id == id);
+        match &region.source {
+            CtaSource::Element { element_id } => {
+                if !element_exists(element_id) {
+                    issues.push(format!(
+                        "cta region '{}' references missing element '{element_id}'",
+                        region.id
+                    ));
+                }
+            }
+            CtaSource::Elements { element_ids } => {
+                if element_ids.is_empty() {
+                    issues.push(format!(
+                        "cta region '{}' has an empty element set",
+                        region.id
+                    ));
+                }
+                for element_id in element_ids {
+                    if !element_exists(element_id) {
+                        issues.push(format!(
+                            "cta region '{}' references missing element '{element_id}'",
+                            region.id
+                        ));
+                    }
+                }
+            }
+            CtaSource::Region { x, y, w, h } => {
+                if *w <= 0.0 || *h <= 0.0 {
+                    issues.push(format!(
+                        "cta region '{}' manual rect must have positive size",
+                        region.id
+                    ));
+                }
+                let epsilon = 1e-4;
+                if *x < -epsilon
+                    || *y < -epsilon
+                    || x + w > 1.0 + epsilon
+                    || y + h > 1.0 + epsilon
+                {
+                    issues.push(format!(
+                        "cta region '{}' manual rect must lie within 0..1",
+                        region.id
+                    ));
+                }
             }
         }
     }

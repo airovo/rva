@@ -21,10 +21,10 @@
         text-align: center;
       }
       h1 { font-size: 18px; margin: 0; letter-spacing: -0.01em; }
-      p { color: #475569; margin: 0; font-size: 14px; max-width: 48ch; }
+      p { color: #475569; margin: 0; font-size: 14px; max-width: 52ch; }
       code { background: #e2e8f0; padding: 0 4px; border-radius: 4px; }
 
-      .stage { width: 100%; max-width: 1100px; }
+      .stage { position: relative; width: 100%; max-width: 1100px; }
       rva-image {
         display: block;
         width: 100%;
@@ -37,7 +37,28 @@
       }
       @media (min-width: 480px)  { rva-image { aspect-ratio: 1 / 1; } }        /* square   */
       @media (min-width: 820px)  { rva-image { aspect-ratio: 16 / 9; } }       /* desktop  */
-      @media (min-width: 1400px) { rva-image { aspect-ratio: 1920 / 500; } }   /* ultrawide */
+      @media (min-width: 1400px) { rva-image { aspect-ratio: 2 / 1; } }        /* wide (2:1) */
+
+      /* CTA region overlay (authoring/inspection aid; not part of the asset). */
+      .cta-box {
+        position: absolute;
+        border: 2px dashed #0d9488;
+        background: rgba(13, 148, 136, 0.14);
+        border-radius: 6px;
+        pointer-events: none;
+      }
+      .cta-tag {
+        position: absolute;
+        top: 0;
+        left: -2px;
+        transform: translateY(-100%);
+        background: #0d9488;
+        color: #fff;
+        font: 600 11px/1 ui-monospace, monospace;
+        padding: 4px 6px;
+        border-radius: 4px 4px 0 0;
+        white-space: nowrap;
+      }
 
       .badge {
         display: inline-flex;
@@ -56,37 +77,89 @@
   <body>
     <h1>RVA — one asset, any shape</h1>
     <p>
-      The same <code>hero.rva</code> in a single element. Resize the window: the
-      box changes shape and the composition recomposes.
+      The same asset in a single element. Resize the window: the box changes shape
+      and the composition recomposes. Fixture <code>01-basic-hero</code> declares a
+      CTA region <code>shop-cta</code> — click the highlighted area.
     </p>
 
-    <div class="stage">
-      <rva-image id="hero" src="hero.rva" alt="Responsive campaign hero"></rva-image>
+    <div class="stage" id="stage">
+      <rva-image id="hero" src="fixtures/01-basic-hero.rva" alt="Responsive campaign hero"></rva-image>
     </div>
 
     <div class="badge" id="status">resolving…</div>
+    <div class="badge" id="cta">no CTA regions</div>
 
     <script type="importmap">
-      { "imports": { "@rva/web": "../../adapters/web/dist/rva-image.js" } }
+      { "imports": { "@rva/web": "../../adapters/web/dist/rva-image.js?v=2" } }
     </script>
     <script type="module">
       import "@rva/web";
 
       const hero = document.getElementById("hero");
+      const stage = document.getElementById("stage");
       const status = document.getElementById("status");
+      const ctaBadge = document.getElementById("cta");
 
-      hero.addEventListener("rva-render", (event) => {
-        const scene = event.detail;
+      // Guard against a stale cached adapter build (pre-callback API).
+      if (!("onCta" in hero)) {
+        status.textContent = "stale @rva/web build — hard reload (⌘⇧R)";
+      }
+
+      let hits = 0;
+      let last = null;
+
+      const renderCta = () => {
+        ctaBadge.textContent =
+          `CTA ${last ? `· last activation: ${last}` : ""}${hits ? ` · shop-cta fired ${hits}×` : ""}`;
+      };
+
+      // Callback style — the same sugar the React wrapper exposes as props.
+      hero.onRender = (scene) => {
         const degraded = scene.degraded ? " · <b>degraded</b>" : "";
         status.innerHTML =
           `topology <b>${scene.topology}</b> · ${scene.width}×${scene.height} · ` +
           `viability <b>${scene.viability.toFixed(2)}</b>${degraded}`;
-      });
+      };
 
-      hero.addEventListener("rva-error", (event) => {
+      hero.onCtaRegions = (regions) => {
+        stage.querySelectorAll(".cta-box").forEach((node) => node.remove());
+        const visible = regions.filter((region) => region.visible);
+        ctaBadge.textContent = visible.length
+          ? `CTA ${visible.map((region) => region.id).join(", ")}`
+          : "no CTA regions";
+        for (const region of visible) {
+          const box = document.createElement("div");
+          box.className = "cta-box";
+          box.style.left = `${region.normalizedBounds.x * 100}%`;
+          box.style.top = `${region.normalizedBounds.y * 100}%`;
+          box.style.width = `${region.normalizedBounds.width * 100}%`;
+          box.style.height = `${region.normalizedBounds.height * 100}%`;
+          box.innerHTML = `<span class="cta-tag">${region.id}</span>`;
+          stage.appendChild(box);
+        }
+      };
+
+      hero.onCta = (cta) => {
+        last = cta.id;
+        renderCta();
+      };
+
+      hero.ctaHandlers = {
+        "shop-cta": () => {
+          hits += 1;
+          renderCta();
+          // The host decides what activation means, e.g.:
+          //   location.assign("/product/42");
+        },
+      };
+
+      hero.onError = (detail) => {
         status.textContent = "render error — see console";
-        console.error(event.detail);
-      });
+        console.error(detail);
+      };
+
+      // Event style works too (and is what the callbacks are sugar over):
+      // hero.addEventListener("rva-render", (e) => console.log(e.detail.topology));
     </script>
   </body>
 </html>

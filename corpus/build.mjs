@@ -244,8 +244,12 @@ function build(id, overrides = {}) {
     },
     elements,
     topologies,
+    // Optional semantic CTA regions (identity + geometry only; the host binds
+    // behavior). Omitted when a fixture declares none.
+    ctaRegions: overrides.ctaRegions,
     fallback: { resource: overrides.fallbackResource ?? "background", fit: "cover" },
   };
+  if (!overrides.ctaRegions) delete scene.ctaRegions;
 
   fs.writeFileSync(path.join(dir, "scene.json"), JSON.stringify(scene, null, 2));
   const out = path.join(outDir, `${id}.rva`);
@@ -257,7 +261,13 @@ function build(id, overrides = {}) {
 
 // --- Fixture definitions ----------------------------------------------------
 
-build("01-basic-hero", { product: { id: "product", file: "product.png" } });
+build("01-basic-hero", {
+  product: { id: "product", file: "product.png" },
+  // A product-bound CTA: the region follows the product through recomposition.
+  ctaRegions: [
+    { id: "shop-cta", name: "Shop now", source: { type: "element", elementId: "product" } },
+  ],
+});
 
 build("02-long-headline", {
   headline:

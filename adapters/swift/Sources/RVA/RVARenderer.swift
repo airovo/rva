@@ -53,19 +53,22 @@ public enum RVARenderer {
         let W = CGFloat(scene.width)
         let H = CGFloat(scene.height)
 
-        if let background = scene.background,
-           background.type == "image",
-           let resource = background.resource,
-           let cgImage = try? decode(image: image, resource: resource) {
-            let iw = CGFloat(cgImage.width)
-            let ih = CGFloat(cgImage.height)
-            let cover = max(W / iw, H / ih)
-            let dw = iw * cover
-            let dh = ih * cover
-            context.saveGState()
-            context.clip(to: CGRect(x: 0, y: 0, width: W, height: H))
-            context.draw(cgImage, in: CGRect(x: (W - dw) / 2, y: (H - dh) / 2, width: dw, height: dh))
-            context.restoreGState()
+        if let background = scene.background {
+            if background.type == "image",
+               let resource = background.resource,
+               let cgImage = try? decode(image: image, resource: resource) {
+                let iw = CGFloat(cgImage.width)
+                let ih = CGFloat(cgImage.height)
+                let cover = max(W / iw, H / ih)
+                let dw = iw * cover
+                let dh = ih * cover
+                context.saveGState()
+                context.clip(to: CGRect(x: 0, y: 0, width: W, height: H))
+                context.draw(cgImage, in: CGRect(x: (W - dw) / 2, y: (H - dh) / 2, width: dw, height: dh))
+                context.restoreGState()
+            } else if background.type == "paint", let paint = background.paint {
+                applyPaint(paint, in: context, rect: CGRect(x: 0, y: 0, width: W, height: H))
+            }
         }
 
         for item in scene.items {
@@ -74,6 +77,11 @@ public enum RVARenderer {
 
             if item.type == "text" {
                 drawText(item, in: context, sceneHeight: H)
+                continue
+            }
+
+            if item.type == "paint", let paint = item.paint {
+                applyPaint(paint, in: context, rect: rect)
                 continue
             }
 
@@ -102,25 +110,158 @@ public enum RVARenderer {
     private static func drawText(_ item: ResolvedItem, in context: CGContext, sceneHeight H: CGFloat) {
         let size = CGFloat(item.size ?? 16)
         let font = systemFont(size: size, weight: item.weight ?? 400)
-        let color: NSColor = item.role == "subheadline"
-            ? NSColor(calibratedRed: 0.2, green: 0.25, blue: 0.33, alpha: 1)
-            : NSColor(calibratedRed: 0.06, green: 0.09, blue: 0.16, alpha: 1)
-
         let lines = (item.lines?.isEmpty == false ? item.lines! : [item.value ?? ""])
         let ascent = CGFloat(item.ascent ?? Double(size) * 0.8)
         let lineHeight = CGFloat(item.lineHeight ?? Double(size) * 1.08)
+        let align = item.align ?? "left"
+        let boxX = CGFloat(item.x)
+        let boxY = CGFloat(item.y)
+        let boxW = CGFloat(item.w)
+        let boxH = CGFloat(item.h)
 
-        for (index, line) in lines.enumerated() {
-            let top = CGFloat(item.y) + ascent + CGFloat(index) * lineHeight
-            let baseline = H - top
-            let attributed = NSAttributedString(
-                string: line,
-                attributes: [.font: font, .foregroundColor: color]
+        // Optional solid text-box background.
+        if let background = item.background, !background.isEmpty, let color = cgColor(background) {
+            context.setFillColor(color)
+            context.fill(CGRect(x: boxX, y: H - boxY - boxH, width: boxW, height: boxH))
+        }
+
+        var attributes: [NSAttributedString.Key: Any] = [.font: font]
+        if let spacing = item.letterSpacing, spacing != 0 {
+            attributes[.kern] = CGFloat(spacing)
+        }
+
+        func line(for text: String, color: NSColor?) -> CTLine {
+            var attrs = attributes
+            if let color = color { attrs[.foregroundColor] = color }
+            return CTLineCreateWithAttributedString(
+                NSAttributedString(string: text, attributes: attrs)
             )
-            let ctLine = CTLineCreateWithAttributedString(attributed)
-            context.textPosition = CGPoint(x: item.x, y: baseline)
+        }
+        func origin(_ ctLine: CTLine, index: Int) -> CGPoint {
+            let width = CGFloat(CTLineGetTypographicBounds(ctLine, nil, nil, nil))
+            let x = align == "center" ? boxX + (boxW - width) / 2 : align == "right" ? boxX + boxW - width : boxX
+            let top = boxY + ascent + CGFloat(index) * lineHeight
+            return CGPoint(x: x, y: H - top)
+        }
+
+        // Gradient fill: clip to the glyphs, then paint the gradient over the box.
+        if let fill = item.fill, fill.type != "color", let spec = gradientSpec(fill) {
+            context.saveGState()
+            context.setTextDrawingMode(.clip)
+            for (index, text) in lines.enumerated() {
+                let ctLine = line(for: text, color: nil)
+                context.textPosition = origin(ctLine, index: index)
+                CTLineDraw(ctLine, context)
+            }
+            context.setTextDrawingMode(.fill)
+            drawGradient(spec, in: context, rect: CGRect(x: boxX, y: H - boxY - boxH, width: boxW, height: boxH))
+            context.restoreGState()
+            return
+        }
+
+        let solid: NSColor = {
+            if let fill = item.fill, fill.type == "color", let hex = fill.color, let cg = cgColor(hex) {
+                return NSColor(cgColor: cg) ?? NSColor.black
+            }
+            if let hex = item.color, let cg = cgColor(hex) {
+                return NSColor(cgColor: cg) ?? NSColor.black
+            }
+            return item.role == "subheadline"
+                ? NSColor(calibratedRed: 0.2, green: 0.25, blue: 0.33, alpha: 1)
+                : NSColor(calibratedRed: 0.06, green: 0.09, blue: 0.16, alpha: 1)
+        }()
+
+        for (index, text) in lines.enumerated() {
+            let ctLine = line(for: text, color: solid)
+            context.textPosition = origin(ctLine, index: index)
             CTLineDraw(ctLine, context)
         }
+    }
+
+    // MARK: - Paint (solid colour / gradient)
+
+    private struct GradientSpec {
+        let colors: [CGColor]
+        let locations: [CGFloat]
+        let radial: Bool
+        let angle: Double
+    }
+
+    private static func applyPaint(_ paint: Paint, in context: CGContext, rect: CGRect) {
+        if paint.type == "color", let hex = paint.color, let color = cgColor(hex) {
+            context.setFillColor(color)
+            context.fill(rect)
+            return
+        }
+        if let spec = gradientSpec(paint) {
+            drawGradient(spec, in: context, rect: rect)
+        }
+    }
+
+    private static func gradientSpec(_ paint: Paint) -> GradientSpec? {
+        guard
+            paint.type == "linearGradient" || paint.type == "radialGradient",
+            let stops = paint.stops,
+            !stops.isEmpty
+        else { return nil }
+        let colors = stops.map { cgColor($0.color) ?? CGColor(gray: 0, alpha: 1) }
+        let locations = stops.map { CGFloat($0.offset) }
+        return GradientSpec(
+            colors: colors,
+            locations: locations,
+            radial: paint.type == "radialGradient",
+            angle: paint.angle ?? 0
+        )
+    }
+
+    /// Gradient in the flipped (bottom-left) space, matching the reference
+    /// geometry: angle 0 runs left→right.
+    private static func drawGradient(_ spec: GradientSpec, in context: CGContext, rect: CGRect) {
+        guard
+            let gradient = CGGradient(
+                colorsSpace: CGColorSpaceCreateDeviceRGB(),
+                colors: spec.colors as CFArray,
+                locations: spec.locations
+            )
+        else { return }
+        let options: CGGradientDrawingOptions = [.drawsBeforeStartLocation, .drawsAfterEndLocation]
+        if spec.radial {
+            let center = CGPoint(x: rect.midX, y: rect.midY)
+            context.drawRadialGradient(
+                gradient,
+                startCenter: center, startRadius: 0,
+                endCenter: center, endRadius: max(rect.width, rect.height) / 2,
+                options: options
+            )
+        } else {
+            let rad = spec.angle * .pi / 180
+            let start = CGPoint(
+                x: rect.minX + (0.5 - 0.5 * cos(rad)) * rect.width,
+                y: rect.maxY - (0.5 - 0.5 * sin(rad)) * rect.height
+            )
+            let end = CGPoint(
+                x: rect.minX + (0.5 + 0.5 * cos(rad)) * rect.width,
+                y: rect.maxY - (0.5 + 0.5 * sin(rad)) * rect.height
+            )
+            context.drawLinearGradient(gradient, start: start, end: end, options: options)
+        }
+    }
+
+    /// Parse an RVA CSS hex colour (`#RGB`, `#RRGGBB`, `#RRGGBBAA`).
+    private static func cgColor(_ hex: String) -> CGColor? {
+        var value = hex.trimmingCharacters(in: .whitespaces)
+        if value.hasPrefix("#") { value.removeFirst() }
+        if value.count == 3 {
+            value = value.map { "\($0)\($0)" }.joined()
+        }
+        guard value.count == 6 || value.count == 8 else { return nil }
+        func component(_ offset: Int) -> CGFloat {
+            let start = value.index(value.startIndex, offsetBy: offset)
+            let end = value.index(start, offsetBy: 2)
+            return CGFloat(Int(value[start..<end], radix: 16) ?? 0) / 255
+        }
+        let alpha = value.count == 8 ? component(6) : 1
+        return CGColor(srgbRed: component(0), green: component(2), blue: component(4), alpha: alpha)
     }
 
     private static func systemFont(size: CGFloat, weight: Int) -> NSFont {

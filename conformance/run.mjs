@@ -28,7 +28,11 @@ const sizesFile = path.join(dir, "sizes.txt");
 const fixtures = process.argv.slice(2);
 const fixtureList = fixtures.length
   ? fixtures
-  : [path.join(root, "examples", "node", "hero.rva")];
+  : [
+      path.join(root, "examples", "node", "hero.rva"),
+      // CTA regions: element-bound + padded manual region across two topologies.
+      path.join(root, "examples", "node", "cta.rva"),
+    ];
 
 // Continuous, deliberately awkward size matrix (not just 16:9/1:1/9:16).
 const sizes = [];

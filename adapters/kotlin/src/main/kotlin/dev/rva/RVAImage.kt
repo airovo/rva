@@ -1,5 +1,8 @@
 package dev.rva
 
+import java.io.File
+import java.net.URL
+
 // RVA Android/Kotlin adapter.
 //
 // Binds the shared Rust core through a JNI bridge (ffi/src/jni_bridge.rs) in
@@ -8,6 +11,7 @@ package dev.rva
 //
 // Uniform adapter surface (see adapters/contract.json):
 //   open(bytes)                -> RVAImage
+//   openSource(source)         -> RVAImage   (path | file:// | http(s)://)
 //   describe()                 -> String
 //   resolveJSON(width, height) -> ResolvedScene JSON
 //   resource(reference)        -> ByteArray
@@ -38,6 +42,28 @@ class RVAImage private constructor(private var handle: Long) {
             val handle = RvaNative.nativeOpen(bytes)
             check(handle != 0L) { "rva_open failed" }
             return RVAImage(handle)
+        }
+
+        /**
+         * Open from a filesystem path, a `file://` URL or an `http(s)://` URL.
+         * Convenience over the normative [open] (bytes).
+         */
+        @JvmStatic
+        fun openSource(source: String): RVAImage = open(readSource(source))
+
+        /** Read `.rva` bytes from a path, `file://` or `http(s)://` URL. */
+        @JvmStatic
+        fun readSource(source: String): ByteArray {
+            val lower = source.lowercase()
+            if (lower.startsWith("file:") || lower.startsWith("http:") || lower.startsWith("https:")) {
+                val url = URL(source)
+                return when (url.protocol.lowercase()) {
+                    "file" -> File(url.path).readBytes()
+                    else -> url.openStream().use { it.readBytes() }
+                }
+            }
+            // No recognised scheme: treat as a filesystem path.
+            return File(source).readBytes()
         }
     }
 

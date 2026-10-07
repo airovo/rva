@@ -316,6 +316,7 @@ fn fallback_scene(asset: &Asset, width: u32, height: u32) -> Result<ResolvedScen
             },
         }),
         items: Vec::new(),
+        cta_regions: Vec::new(),
         diagnostics: vec!["rendered canonical fallback representation".to_string()],
     })
 }

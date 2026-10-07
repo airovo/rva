@@ -31,6 +31,11 @@ pub struct Scene {
     /// forward-compatible: readers that do not implement a kind ignore it.
     #[serde(default)]
     pub constraints: Vec<Constraint>,
+    /// Semantic, actionable spatial regions. CTA Regions carry identity and
+    /// geometry only; behavior is bound by the host at runtime. Independent of
+    /// the `role: "cta"` visual semantic. Optional and forward-compatible.
+    #[serde(rename = "ctaRegions", default)]
+    pub cta_regions: Vec<CtaRegion>,
     #[serde(default)]
     pub fallback: Option<Fallback>,
 }
@@ -123,6 +128,51 @@ pub struct Element {
     /// group's offset, opacity and visibility.
     #[serde(default)]
     pub parent: Option<String>,
+}
+
+/// A semantic, actionable spatial region associated with a call to action.
+///
+/// RVA defines the region's *identity*, *source* and *resolved geometry* — never
+/// the behavior performed on activation. The stable `id` is the host-facing
+/// binding key and must survive save, export, parse and resolve unchanged. A
+/// `CtaRegion` is independent of the visual `role: "cta"` semantic: neither
+/// requires the other.
+#[derive(Debug, Clone, Serialize, Deserialize, TS)]
+pub struct CtaRegion {
+    pub id: String,
+    /// Human-readable label for authoring. Independent of `id`; never used as a
+    /// reference.
+    #[serde(default)]
+    pub name: Option<String>,
+    pub source: CtaSource,
+    /// Optional deterministic hit padding. A non-negative fraction of the
+    /// canvas's shorter side, applied uniformly outward and clamped to the
+    /// canvas, enlarging the actionable region without changing visual geometry.
+    /// It participates in overlap validation. Absent/0 means no padding.
+    #[serde(default)]
+    pub padding: Option<f32>,
+}
+
+/// How a [`CtaRegion`] derives its geometry. Every variant is deterministic and
+/// resolves to bounds in the same logical coordinate space as `ResolvedScene`.
+#[derive(Debug, Clone, Serialize, Deserialize, TS)]
+#[serde(tag = "type", rename_all = "lowercase")]
+pub enum CtaSource {
+    /// Follow one element. If the element is a group, the region covers the
+    /// union of its resolved descendants.
+    Element {
+        #[serde(rename = "elementId")]
+        element_id: String,
+    },
+    /// Cover several related elements (union of all resolved visible ones).
+    Elements {
+        #[serde(rename = "elementIds")]
+        element_ids: Vec<String>,
+    },
+    /// An explicitly authored region, normalized `0..1` to the canvas. Scales
+    /// with the render size; it does not track topology recomposition (use an
+    /// element-bound source for that).
+    Region { x: f32, y: f32, w: f32, h: f32 },
 }
 
 #[derive(Debug, Clone, Serialize, Deserialize, TS)]

@@ -5,7 +5,7 @@
 // keeps text semantic (no bundled fonts required) while still embedding the
 // raster/vector resources as data URIs.
 
-import type { ResolvedItem, ResolvedScene } from "@rva/types";
+import type { Paint, ResolvedItem, ResolvedScene } from "@rva/types";
 import type { RvaHandle } from "./pkg/rva_wasm.js";
 
 const FONT_STACKS: Record<string, string> = {
@@ -77,25 +77,79 @@ function escapeXml(text: string): string {
     .replace(/'/g, "&apos;");
 }
 
-interface RenderedMask {
-  defs: string;
-  body: string;
+/**
+ * Resolve a `Paint` to an SVG `fill`, pushing a gradient definition into `defs`
+ * when needed (userSpaceOnUse, so it matches the resolved element box).
+ * Mirrors the reference renderer / core geometry.
+ */
+function paintFill(
+  paint: Paint,
+  x: number,
+  y: number,
+  w: number,
+  h: number,
+  defs: string[],
+  id: string
+): string {
+  if (paint.type === "color") return paint.color;
+  const stops = paint.stops
+    .map((stop) => `<stop offset="${stop.offset}" stop-color="${stop.color}"/>`)
+    .join("");
+  if (paint.type === "radialGradient") {
+    const cx = x + w / 2;
+    const cy = y + h / 2;
+    const r = Math.max(w, h) / 2;
+    defs.push(
+      `<radialGradient id="${id}" gradientUnits="userSpaceOnUse" cx="${cx}" cy="${cy}" r="${r}">${stops}</radialGradient>`
+    );
+  } else {
+    const rad = (paint.angle * Math.PI) / 180;
+    const x1 = x + (0.5 - 0.5 * Math.cos(rad)) * w;
+    const y1 = y + (0.5 - 0.5 * Math.sin(rad)) * h;
+    const x2 = x + (0.5 + 0.5 * Math.cos(rad)) * w;
+    const y2 = y + (0.5 + 0.5 * Math.sin(rad)) * h;
+    defs.push(
+      `<linearGradient id="${id}" gradientUnits="userSpaceOnUse" x1="${x1}" y1="${y1}" x2="${x2}" y2="${y2}">${stops}</linearGradient>`
+    );
+  }
+  return `url(#${id})`;
 }
 
-function renderItem(handle: RvaHandle, item: ResolvedItem): string | RenderedMask {
+function renderItem(
+  handle: RvaHandle,
+  item: ResolvedItem,
+  defs: string[],
+  paintSeq: { value: number }
+): string {
   if (item.type === "text") {
     const family = fontStack(item.fontFamily);
-    const fill = item.role === "subheadline" ? "#334155" : "#0F172A";
-    return item.lines
+    const fill = item.fill
+      ? paintFill(item.fill, item.x, item.y, item.w, item.h, defs, `paint-${paintSeq.value++}`)
+      : item.color ?? (item.role === "subheadline" ? "#334155" : "#0F172A");
+    const anchor = item.align === "center" ? "middle" : item.align === "right" ? "end" : "start";
+    const x =
+      item.align === "center"
+        ? item.x + item.w / 2
+        : item.align === "right"
+          ? item.x + item.w
+          : item.x;
+    const box = item.background
+      ? `<rect x="${item.x}" y="${item.y}" width="${item.w}" height="${item.h}" fill="${item.background}"/>`
+      : "";
+    const spacing =
+      (item.letterSpacing ? ` letter-spacing="${item.letterSpacing}"` : "") +
+      (item.wordSpacing ? ` word-spacing="${item.wordSpacing}"` : "");
+    const text = item.lines
       .map((line, index) => {
         const y = item.y + item.ascent + index * item.lineHeight;
         return (
-          `<text x="${item.x}" y="${y}" font-family="${family}" ` +
-          `font-size="${item.size}" font-weight="${item.weight}" ` +
-          `fill="${fill}" xml:space="preserve">${escapeXml(line)}</text>`
+          `<text x="${x}" y="${y}" text-anchor="${anchor}" font-family="${family}" ` +
+          `font-size="${item.size}" font-weight="${item.weight}" fill="${fill}"${spacing} ` +
+          `xml:space="preserve">${escapeXml(line)}</text>`
         );
       })
       .join("");
+    return box + text;
   }
 
   if (item.type === "vector") {
@@ -103,6 +157,11 @@ function renderItem(handle: RvaHandle, item: ResolvedItem): string | RenderedMas
     const [iw] = svgIntrinsic(text);
     const scale = iw > 0 ? item.w / iw : 1;
     return `<g transform="translate(${item.x},${item.y}) scale(${scale})">${svgInner(text)}</g>`;
+  }
+
+  if (item.type === "paint") {
+    const fill = paintFill(item.paint, item.x, item.y, item.w, item.h, defs, `paint-${paintSeq.value++}`);
+    return `<rect x="${item.x}" y="${item.y}" width="${item.w}" height="${item.h}" fill="${fill}"/>`;
   }
 
   const uri = dataUri(handle, item.resource);
@@ -117,13 +176,15 @@ function renderItem(handle: RvaHandle, item: ResolvedItem): string | RenderedMas
     `<mask id="${id}" maskUnits="userSpaceOnUse" x="${item.x}" y="${item.y}" ` +
     `width="${item.w}" height="${item.h}"><image x="${item.x}" y="${item.y}" ` +
     `width="${item.w}" height="${item.h}" preserveAspectRatio="none" href="${maskUri}"/></mask>`;
-  return { defs: mask, body: `<g mask="url(#${id})">${image}</g>` };
+  defs.push(mask);
+  return `<g mask="url(#${id})">${image}</g>`;
 }
 
 export function renderToSvg(handle: RvaHandle, scene: ResolvedScene): string {
   const { width, height } = scene;
   const defs: string[] = [];
   const body: string[] = [];
+  const paintSeq = { value: 0 };
 
   if (scene.background && scene.background.type === "image") {
     const uri = dataUri(handle, scene.background.resource);
@@ -132,16 +193,13 @@ export function renderToSvg(handle: RvaHandle, scene: ResolvedScene): string {
       `<image x="0" y="0" width="${width}" height="${height}" ` +
         `preserveAspectRatio="${par}" href="${uri}"/>`
     );
+  } else if (scene.background && scene.background.type === "paint") {
+    const fill = paintFill(scene.background.paint, 0, 0, width, height, defs, `paint-${paintSeq.value++}`);
+    body.push(`<rect x="0" y="0" width="${width}" height="${height}" fill="${fill}"/>`);
   }
 
   for (const item of scene.items) {
-    const rendered = renderItem(handle, item);
-    if (typeof rendered === "string") {
-      body.push(rendered);
-    } else {
-      defs.push(rendered.defs);
-      body.push(rendered.body);
-    }
+    body.push(renderItem(handle, item, defs, paintSeq));
   }
 
   return (

@@ -5,6 +5,7 @@
 //
 // Uniform adapter surface (see adapters/contract.json):
 //   open(bytes)                -> RVAImage
+//   openSource(source)         -> RVAImage   (path | file:// | http(s)://)
 //   describe()                 -> String
 //   resolveJSON(width, height) -> ResolvedScene JSON
 //   resource(reference)        -> Uint8List
@@ -98,6 +99,40 @@ class RVAImage {
     } finally {
       malloc.free(pointer);
     }
+  }
+
+  /// Open from a filesystem path, a `file://` URL or an `http(s)://` URL.
+  /// Convenience over the normative [RVAImage.open] (bytes).
+  static Future<RVAImage> openSource(String source) async =>
+      RVAImage.open(await readSource(source));
+
+  /// Read `.rva` bytes from a path, `file://` or `http(s)://` URL.
+  static Future<Uint8List> readSource(String source) async {
+    final uri = Uri.tryParse(source);
+    if (uri != null &&
+        uri.hasScheme &&
+        (uri.scheme == 'file' || uri.scheme == 'http' || uri.scheme == 'https')) {
+      if (uri.scheme == 'file') {
+        return File.fromUri(uri).readAsBytes();
+      }
+      final client = HttpClient();
+      try {
+        final request = await client.getUrl(uri);
+        final response = await request.close();
+        if (response.statusCode != HttpStatus.ok) {
+          throw HttpException('HTTP ${response.statusCode} for $source');
+        }
+        final builder = BytesBuilder(copy: false);
+        await for (final chunk in response) {
+          builder.add(chunk);
+        }
+        return builder.takeBytes();
+      } finally {
+        client.close(force: true);
+      }
+    }
+    // No recognised scheme: treat as a filesystem path.
+    return File(source).readAsBytes();
   }
 
   /// Human-readable asset summary.

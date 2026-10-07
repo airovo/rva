@@ -10,7 +10,23 @@
 // resize, exactly like a responsive UI component.
 
 import init, { load, type RvaHandle } from "./pkg/rva_wasm.js";
-import type { ResolvedItem, ResolvedScene } from "@rva/types";
+import type { Paint, ResolvedCtaRegion, ResolvedItem, ResolvedScene } from "@rva/types";
+
+/** A CTA region activation: the stable id plus its resolved geometry. */
+export interface RvaCtaActivation {
+  id: string;
+  region: ResolvedCtaRegion;
+}
+
+export interface RvaLoadDetail {
+  description: string;
+  src: string | null;
+}
+
+export interface RvaErrorDetail {
+  error: unknown;
+  src: string | null;
+}
 
 let wasmReady: Promise<unknown> | null = null;
 function ensureWasm(): Promise<unknown> {
@@ -62,6 +78,56 @@ function loadImage(url: string): Promise<HTMLImageElement> {
     img.onerror = () => reject(new Error(`failed to decode ${url}`));
     img.src = url;
   });
+}
+
+async function toBytes(value: Uint8Array | ArrayBuffer | Blob): Promise<Uint8Array> {
+  if (value instanceof Uint8Array) return value;
+  if (value instanceof ArrayBuffer) return new Uint8Array(value);
+  return new Uint8Array(await value.arrayBuffer());
+}
+
+/**
+ * Turn a resolved `Paint` (solid colour or gradient) into a canvas fill style.
+ * Mirrors the reference renderer so gradients match the core/viewer.
+ */
+function paintStyle(
+  ctx: CanvasRenderingContext2D,
+  paint: Paint,
+  x: number,
+  y: number,
+  w: number,
+  h: number
+): string | CanvasGradient {
+  if (paint.type === "color") return paint.color;
+  let gradient: CanvasGradient;
+  if (paint.type === "radialGradient") {
+    const cx = x + w / 2;
+    const cy = y + h / 2;
+    gradient = ctx.createRadialGradient(cx, cy, 0, cx, cy, Math.max(w, h) / 2);
+  } else {
+    const rad = (paint.angle * Math.PI) / 180;
+    const x1 = x + (0.5 - 0.5 * Math.cos(rad)) * w;
+    const y1 = y + (0.5 - 0.5 * Math.sin(rad)) * h;
+    const x2 = x + (0.5 + 0.5 * Math.cos(rad)) * w;
+    const y2 = y + (0.5 + 0.5 * Math.sin(rad)) * h;
+    gradient = ctx.createLinearGradient(x1, y1, x2, y2);
+  }
+  for (const stop of paint.stops) {
+    gradient.addColorStop(Math.max(0, Math.min(1, stop.offset)), stop.color);
+  }
+  return gradient;
+}
+
+function fillPaint(
+  ctx: CanvasRenderingContext2D,
+  paint: Paint,
+  x: number,
+  y: number,
+  w: number,
+  h: number
+): void {
+  ctx.fillStyle = paintStyle(ctx, paint, x, y, w, h);
+  ctx.fillRect(x, y, w, h);
 }
 
 function drawCover(
@@ -118,6 +184,71 @@ export class RvaImage extends HTMLElement {
   private observer: ResizeObserver | null = null;
   private canvas!: HTMLCanvasElement;
   private ctx!: CanvasRenderingContext2D;
+  private lastScene: ResolvedScene | null = null;
+  private readonly ctaBindings = new Map<string, Set<() => void>>();
+  private readonly onClick = (event: MouseEvent): void => this.handleCtaClick(event);
+
+  // Callback-style API (parity with the React wrapper's props). These are
+  // optional sugar that runs alongside the native `rva-*` events.
+  onRender: ((scene: ResolvedScene) => void) | null = null;
+  onCtaRegions: ((regions: ResolvedCtaRegion[]) => void) | null = null;
+  onCta: ((activation: RvaCtaActivation) => void) | null = null;
+  ctaHandlers: Record<string, (activation: RvaCtaActivation) => void> | null = null;
+  onLoad: ((detail: RvaLoadDetail) => void) | null = null;
+  onError: ((detail: RvaErrorDetail) => void) | null = null;
+
+  /**
+   * Optional: supply bytes directly, bypassing `src`/fetch. Useful for bundled
+   * or locally-read files (e.g. a `file://` asset a host has already loaded).
+   * Set the property, then call `reload()`.
+   */
+  bytes: Uint8Array | ArrayBuffer | Blob | null = null;
+
+  /**
+   * Optional: resolve `src` to bytes when `fetch` cannot (custom protocols,
+   * Tauri `convertFileSrc`, authenticated sources…). Set before `src`.
+   */
+  srcResolver:
+    | ((src: string) => Promise<ArrayBuffer | Uint8Array> | ArrayBuffer | Uint8Array)
+    | null = null;
+
+  /**
+   * Visible CTA regions of the current resolution. Identity + geometry only —
+   * the asset carries no behavior; bind it here.
+   */
+  get ctaRegions(): ResolvedCtaRegion[] {
+    return (this.lastScene?.ctaRegions ?? []).filter((region) => region.visible);
+  }
+
+  /**
+   * Bind a handler to a CTA region id. Returns an unbind function. The host
+   * decides what activation means (navigate, open, track…).
+   *
+   *   rvaImage.bindCta("shop-now", () => router.push("/product"));
+   */
+  bindCta(id: string, handler: () => void): () => void {
+    let set = this.ctaBindings.get(id);
+    if (!set) {
+      set = new Set();
+      this.ctaBindings.set(id, set);
+    }
+    set.add(handler);
+    return () => this.unbindCta(id, handler);
+  }
+
+  unbindCta(id: string, handler?: () => void): void {
+    if (!handler) {
+      this.ctaBindings.delete(id);
+      return;
+    }
+    const set = this.ctaBindings.get(id);
+    set?.delete(handler);
+    if (set && set.size === 0) this.ctaBindings.delete(id);
+  }
+
+  unbindAllCta(): void {
+    this.ctaBindings.clear();
+  }
 
   constructor() {
     super();
@@ -135,13 +266,19 @@ export class RvaImage extends HTMLElement {
     }
     this.canvas = this.shadowRoot!.querySelector("canvas") as HTMLCanvasElement;
     this.ctx = this.canvas.getContext("2d") as CanvasRenderingContext2D;
+    this.canvas.addEventListener("click", this.onClick);
 
     if (!this.observer) {
       this.observer = new ResizeObserver(() => this.scheduleDraw());
       this.observer.observe(this);
     }
     this.syncAlt();
-    if (this.getAttribute("src")) void this.load();
+    if (this.getAttribute("src") || this.bytes) void this.load();
+  }
+
+  /** Re-load from the current `bytes`/`srcResolver`/`src`. */
+  reload(): void {
+    void this.load();
   }
 
   disconnectedCallback(): void {
@@ -149,9 +286,33 @@ export class RvaImage extends HTMLElement {
       this.observer.disconnect();
       this.observer = null;
     }
+    this.canvas?.removeEventListener("click", this.onClick);
     for (const entry of this.images.values()) URL.revokeObjectURL(entry.url);
     this.images.clear();
     this.handle = null;
+    this.lastScene = null;
+  }
+
+  private handleCtaClick(event: MouseEvent): void {
+    const scene = this.lastScene;
+    if (!scene || !this.canvas) return;
+    const rect = this.canvas.getBoundingClientRect();
+    if (rect.width <= 0 || rect.height <= 0) return;
+    const x = ((event.clientX - rect.left) / rect.width) * scene.width;
+    const y = ((event.clientY - rect.top) / rect.height) * scene.height;
+    const region = this.ctaRegions.find(
+      (candidate) =>
+        x >= candidate.bounds.x &&
+        x <= candidate.bounds.x + candidate.bounds.width &&
+        y >= candidate.bounds.y &&
+        y <= candidate.bounds.y + candidate.bounds.height
+    );
+    if (!region) return;
+    const activation: RvaCtaActivation = { id: region.id, region };
+    this.dispatchEvent(new CustomEvent("rva-cta", { detail: activation }));
+    this.onCta?.(activation);
+    this.ctaHandlers?.[region.id]?.(activation);
+    for (const handler of this.ctaBindings.get(region.id) ?? []) handler();
   }
 
   attributeChangedCallback(name: string, oldValue: string | null, newValue: string | null): void {
@@ -167,21 +328,40 @@ export class RvaImage extends HTMLElement {
 
   private async load(): Promise<void> {
     const src = this.getAttribute("src");
-    if (!src) return;
+    if (!src && !this.bytes) return;
     try {
       await ensureWasm();
-      const response = await fetch(src);
-      if (!response.ok) throw new Error(`fetch ${src}: ${response.status}`);
-      const bytes = new Uint8Array(await response.arrayBuffer());
+      const bytes = await this.readBytes(src);
       this.handle = load(bytes);
-      this.dispatchEvent(
-        new CustomEvent("rva-load", { detail: { description: this.handle.describe(), src } })
-      );
+      const description = this.handle.describe();
+      this.dispatchEvent(new CustomEvent("rva-load", { detail: { description, src } }));
+      this.onLoad?.({ description, src });
       this.scheduleDraw();
     } catch (error) {
       this.dispatchEvent(new CustomEvent("rva-error", { detail: { error, src } }));
+      this.onError?.({ error, src });
       console.error("[rva-image]", error);
     }
+  }
+
+  /**
+   * Resolve asset bytes from, in order: an explicit `bytes` value, a
+   * `srcResolver`, or `fetch(src)`. Browsers/WebViews block `file://` fetches;
+   * for those, supply `bytes` or a `srcResolver` (e.g. Tauri `convertFileSrc`).
+   */
+  private async readBytes(src: string | null): Promise<Uint8Array> {
+    if (this.bytes) return toBytes(this.bytes);
+    if (this.srcResolver && src) return toBytes(await this.srcResolver(src));
+    if (!src) throw new Error("no src or bytes provided");
+    if (src.startsWith("file://")) {
+      throw new Error(
+        "file:// sources cannot be fetched here — set `bytes` or `srcResolver` " +
+          "(Tauri: use convertFileSrc; Node: use @rva/node openSource)"
+      );
+    }
+    const response = await fetch(src);
+    if (!response.ok) throw new Error(`fetch ${src}: ${response.status}`);
+    return new Uint8Array(await response.arrayBuffer());
   }
 
   private scheduleDraw(): void {
@@ -220,6 +400,7 @@ export class RvaImage extends HTMLElement {
     ctx.clearRect(0, 0, cssW, cssH);
 
     const scene = JSON.parse(this.handle.resolve(cssW, cssH)) as ResolvedScene;
+    this.lastScene = scene;
 
     const needed = new Set<string>();
     if (scene.background && scene.background.type === "image") {
@@ -249,6 +430,8 @@ export class RvaImage extends HTMLElement {
           ctx.drawImage(entry.img, 0, 0, cssW, cssH);
         }
       }
+    } else if (background && background.type === "paint") {
+      fillPaint(ctx, background.paint, 0, 0, cssW, cssH);
     }
 
     for (const item of scene.items) {
@@ -257,6 +440,11 @@ export class RvaImage extends HTMLElement {
         this.drawText(ctx, item);
         continue;
       }
+      if (item.type === "paint") {
+        fillPaint(ctx, item.paint, item.x, item.y, item.w, item.h);
+        continue;
+      }
+      if (!("resource" in item)) continue;
       const entry = entries.get(item.resource);
       if (!entry) continue;
       if (item.type === "vector") {
@@ -274,17 +462,47 @@ export class RvaImage extends HTMLElement {
     }
     ctx.globalAlpha = 1;
 
+    this.onRender?.(scene);
+    this.onCtaRegions?.(scene.ctaRegions ?? []);
     this.dispatchEvent(new CustomEvent("rva-render", { detail: scene }));
   }
 
   private drawText(ctx: CanvasRenderingContext2D, item: Extract<ResolvedItem, { type: "text" }>): void {
-    ctx.fillStyle = item.role === "subheadline" ? "#334155" : "#0F172A";
+    // Optional solid text-box background.
+    if (item.background) {
+      ctx.fillStyle = item.background;
+      ctx.fillRect(item.x, item.y, item.w, item.h);
+    }
+
+    // Fill: `fill` (colour or gradient) wins; then explicit `color`; then the
+    // role default. Gradient coordinates are relative to the text box.
+    ctx.fillStyle = item.fill
+      ? paintStyle(ctx, item.fill, item.x, item.y, item.w, item.h)
+      : item.color ?? (item.role === "subheadline" ? "#334155" : "#0F172A");
+
     ctx.textBaseline = "alphabetic";
     ctx.font = `${item.weight} ${item.size}px ${fontStack(item.fontFamily)}`;
+
+    const align = item.align ?? "left";
+    const anchorX =
+      align === "center" ? item.x + item.w / 2 : align === "right" ? item.x + item.w : item.x;
+    ctx.textAlign = align === "center" ? "center" : align === "right" ? "right" : "left";
+
+    const styled = ctx as CanvasRenderingContext2D & {
+      letterSpacing?: string;
+      wordSpacing?: string;
+    };
+    if ("letterSpacing" in styled) styled.letterSpacing = `${item.letterSpacing ?? 0}px`;
+    if ("wordSpacing" in styled) styled.wordSpacing = `${item.wordSpacing ?? 0}px`;
+
     const lines = item.lines.length ? item.lines : [item.value];
     for (let i = 0; i < lines.length; i += 1) {
-      ctx.fillText(lines[i], item.x, item.y + item.ascent + i * item.lineHeight);
+      ctx.fillText(lines[i], anchorX, item.y + item.ascent + i * item.lineHeight);
     }
+
+    ctx.textAlign = "left";
+    if ("letterSpacing" in styled) styled.letterSpacing = "0px";
+    if ("wordSpacing" in styled) styled.wordSpacing = "0px";
   }
 }
 

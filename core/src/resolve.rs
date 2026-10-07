@@ -1,6 +1,8 @@
 use crate::error::{Result, RvaError};
 use crate::fonts::Fonts;
-use crate::model::{Background, FocalRegion, Focus, Paint, Scene, TextResource, Topology};
+use crate::model::{
+    Background, CtaSource, FocalRegion, Focus, Paint, Scene, TextResource, Topology,
+};
 use crate::resources::Asset;
 use crate::solver;
 use serde::Serialize;
@@ -27,7 +29,32 @@ pub struct ResolvedScene {
     pub base_color: Option<String>,
     pub background: Option<ResolvedItem>,
     pub items: Vec<ResolvedItem>,
+    /// Resolved, actionable CTA regions. Geometry only — no behavior.
+    #[serde(rename = "ctaRegions")]
+    pub cta_regions: Vec<ResolvedCtaRegion>,
     pub diagnostics: Vec<String>,
+}
+
+/// Logical pixel rectangle in the `ResolvedScene` coordinate space (origin at
+/// the top-left of the canvas).
+#[derive(Debug, Clone, Copy, Serialize, TS)]
+pub struct Bounds {
+    pub x: f32,
+    pub y: f32,
+    pub width: f32,
+    pub height: f32,
+}
+
+/// The resolved geometry of one CTA region. `visible: false` means the source
+/// is not active in the selected composition, so the region must not remain
+/// actionable (bounds are then zero).
+#[derive(Debug, Clone, Serialize, TS)]
+pub struct ResolvedCtaRegion {
+    pub id: String,
+    pub visible: bool,
+    pub bounds: Bounds,
+    #[serde(rename = "normalizedBounds")]
+    pub normalized_bounds: Bounds,
 }
 
 #[derive(Debug, Clone, Serialize, TS)]
@@ -169,8 +196,17 @@ pub fn resolve(asset: &Asset, fonts: &Fonts, width: u32, height: u32) -> Result<
         .min_by(|a, b| a.cost().partial_cmp(&b.cost()).unwrap());
 
     let Some(best) = best else {
-        diagnostics
-            .push("no topology is viable at this size; rendering canonical fallback".to_string());
+        diagnostics.push("no topology is viable at this size; using the canonical fallback".to_string());
+        // Surface the specific blockers so the failure is actionable (names the
+        // topology and the element/constraint that could not be satisfied).
+        let mut seen = std::collections::BTreeSet::new();
+        for candidate in &evaluated {
+            for violation in &candidate.hard {
+                if seen.insert(format!("{}|{}", candidate.topology, violation)) {
+                    diagnostics.push(format!("topology '{}': {violation}", candidate.topology));
+                }
+            }
+        }
         return Ok(fallback_scene(
             asset,
             width,
@@ -207,6 +243,7 @@ pub fn resolve(asset: &Asset, fonts: &Fonts, width: u32, height: u32) -> Result<
         base_color: scene.background.clone(),
         background: best.background.clone(),
         items: best.items.clone(),
+        cta_regions: resolve_cta_regions(scene, &best.items, width, height),
         diagnostics,
     })
 }
@@ -414,7 +451,11 @@ fn layout_topology(
                 match layout_text(fonts, text_resource, w, canvas_w, canvas_h) {
                     Some((size, line_height, lines, overflowed)) => {
                         if overflowed {
-                            hard.push(format!("text '{}' overflows at minimum size", element.id));
+                            let max_lines = text_resource.max_lines.unwrap_or(0);
+                            hard.push(format!(
+                                "text '{}' needs more than {} line(s) at its minimum size in a {:.0}px box — increase Max lines, lower Min size, or widen the box",
+                                element.id, max_lines, w
+                            ));
                         }
                         let ascent =
                             fonts.ascent(size, &text_resource.font_family, text_resource.weight);
@@ -533,8 +574,165 @@ fn fallback_scene(
         base_color: asset.scene.background.clone(),
         background,
         items: Vec::new(),
+        cta_regions: resolve_cta_regions(&asset.scene, &[], width, height),
         diagnostics,
     }
+}
+
+/// Resolve every authored CTA region against the final (post-solver) item
+/// geometry. Manual regions always resolve; element sources resolve to
+/// `visible: false` when their elements are not active in this composition.
+fn resolve_cta_regions(
+    scene: &Scene,
+    items: &[ResolvedItem],
+    width: u32,
+    height: u32,
+) -> Vec<ResolvedCtaRegion> {
+    let canvas_w = width as f32;
+    let canvas_h = height as f32;
+
+    scene
+        .cta_regions
+        .iter()
+        .map(|region| {
+            let bounds = match &region.source {
+                CtaSource::Element { element_id } => {
+                    element_union(scene, items, std::iter::once(element_id))
+                }
+                CtaSource::Elements { element_ids } => {
+                    element_union(scene, items, element_ids.iter())
+                }
+                CtaSource::Region { x, y, w, h } => Some(Bounds {
+                    x: x * canvas_w,
+                    y: y * canvas_h,
+                    width: w * canvas_w,
+                    height: h * canvas_h,
+                }),
+            };
+
+            let (visible, bounds) = match bounds {
+                Some(bounds) => (true, bounds),
+                None => (
+                    false,
+                    Bounds {
+                        x: 0.0,
+                        y: 0.0,
+                        width: 0.0,
+                        height: 0.0,
+                    },
+                ),
+            };
+            let bounds = if visible {
+                pad_bounds(
+                    bounds,
+                    region.padding.unwrap_or(0.0).max(0.0),
+                    canvas_w.min(canvas_h),
+                    canvas_w,
+                    canvas_h,
+                )
+            } else {
+                bounds
+            };
+
+            ResolvedCtaRegion {
+                id: region.id.clone(),
+                visible,
+                bounds,
+                normalized_bounds: Bounds {
+                    x: if canvas_w > 0.0 { bounds.x / canvas_w } else { 0.0 },
+                    y: if canvas_h > 0.0 { bounds.y / canvas_h } else { 0.0 },
+                    width: if canvas_w > 0.0 { bounds.width / canvas_w } else { 0.0 },
+                    height: if canvas_h > 0.0 { bounds.height / canvas_h } else { 0.0 },
+                },
+            }
+        })
+        .collect()
+}
+
+/// Expand a region outward by `padding_fraction * base` on every side, then
+/// clamp to the canvas. Deterministic; used for optional CTA hit padding.
+fn pad_bounds(
+    bounds: Bounds,
+    padding_fraction: f32,
+    base: f32,
+    canvas_w: f32,
+    canvas_h: f32,
+) -> Bounds {
+    if padding_fraction <= 0.0 || base <= 0.0 {
+        return bounds;
+    }
+    let pad = padding_fraction * base;
+    let x = (bounds.x - pad).max(0.0);
+    let y = (bounds.y - pad).max(0.0);
+    let right = (bounds.x + bounds.width + pad).min(canvas_w);
+    let bottom = (bounds.y + bounds.height + pad).min(canvas_h);
+    Bounds {
+        x,
+        y,
+        width: (right - x).max(0.0),
+        height: (bottom - y).max(0.0),
+    }
+}
+
+/// Deterministic union of the resolved bounds of the referenced elements. Group
+/// ids expand to their resolved descendants (groups are containers, not items).
+fn element_union<'a>(
+    scene: &Scene,
+    items: &[ResolvedItem],
+    ids: impl Iterator<Item = &'a String>,
+) -> Option<Bounds> {
+    let mut min_x = f32::INFINITY;
+    let mut min_y = f32::INFINITY;
+    let mut max_x = f32::NEG_INFINITY;
+    let mut max_y = f32::NEG_INFINITY;
+    let mut found = false;
+
+    for id in ids {
+        for item in items {
+            if item.id == *id || is_descendant(scene, &item.id, id) {
+                found = true;
+                min_x = min_x.min(item.x);
+                min_y = min_y.min(item.y);
+                max_x = max_x.max(item.x + item.w);
+                max_y = max_y.max(item.y + item.h);
+            }
+        }
+    }
+
+    if !found {
+        return None;
+    }
+    Some(Bounds {
+        x: min_x,
+        y: min_y,
+        width: max_x - min_x,
+        height: max_y - min_y,
+    })
+}
+
+/// True when `element_id`'s ancestor chain includes `ancestor_id`.
+fn is_descendant(scene: &Scene, element_id: &str, ancestor_id: &str) -> bool {
+    let mut current = scene
+        .elements
+        .iter()
+        .find(|element| element.id == element_id)
+        .and_then(|element| element.parent.clone());
+    let mut guard = 0;
+    while let Some(parent_id) = current {
+        if parent_id == ancestor_id {
+            return true;
+        }
+        guard += 1;
+        if guard > 64 {
+            break; // defensive: malformed/cyclic parent chain
+        }
+        current = scene
+            .elements
+            .iter()
+            .find(|element| element.id == parent_id)
+            .and_then(|element| element.parent.clone());
+    }
+    false
 }
 
 fn lookup_text<'a>(

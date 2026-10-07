@@ -72,6 +72,23 @@ The five operations every binding implements with identical semantics:
 `relative_for` and `render_png` are non-normative convenience helpers. The
 smaller the normative surface, the better.
 
+### Asset sources (convenience, non-normative)
+
+`open(bytes)` is the only normative input. How an asset is *addressed* is a host
+concern, and the bindings accept more than raw bytes:
+
+| Adapter | Accepted sources |
+|---|---|
+| `@rva/node` | `open(bytes)`; `openSource(path \| file:// \| http(s):// \| data:)` |
+| `<rva-image>` (web / vue / svelte / react) | `src` via `fetch` (`http(s)`, `data:`, `blob:`, relative). For `file://` and custom protocols set the element's `bytes` or `srcResolver` |
+| `@rva/react-native` | `src`: bundled resource URI, `file://` or `http(s)://` (native modules read it); WebView fallback uses `fetch` |
+| Swift / Kotlin / Flutter | `open(bytes)`; `openSource(path \| file:// \| http(s)://)` |
+
+Browsers and WebViews cannot `fetch("file://…")` — pass `bytes`/`srcResolver`
+on the web element, or use `openSource` in Node. React Native's native modules
+and the standalone Swift/Kotlin/Flutter adapters read `file://` paths and remote
+URLs directly.
+
 ---
 
 ## Repository layout
@@ -150,6 +167,20 @@ cargo run -p rva-server
 - **Flutter** — `adapters/flutter` (Dart FFI widget), `examples/flutter`
 
 All native adapters bind to the same `rva-ffi` C ABI and the same core.
+
+The native libraries are **prebuilt binaries** (xcframework, `.so`, `.dylib`,
+AAR). Rebuild every one from the current core after changing `rva-core`:
+
+```bash
+./scripts/build-native-libs.sh              # Apple + Android + Kotlin AAR
+./scripts/build-native-libs.sh --skip-apple # Android only (Linux CI)
+```
+
+Outputs: `adapters/swift/RVAFFI.xcframework` (+ copied into
+`adapters/react-native/ios/`), `adapters/kotlin/src/main/jniLibs/<abi>/`,
+`adapters/flutter/native/{android,macos}/`, and
+`adapters/kotlin/build/outputs/aar/rva-kotlin-release.aar`. Requires Xcode
+(Apple) and the Android NDK via `ANDROID_NDK_HOME` (or an SDK `ndk/<ver>`).
 
 ---
 

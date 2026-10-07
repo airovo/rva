@@ -2,16 +2,18 @@
 
 // Node.js example for the @rva/node adapter (installed from the workspace).
 //
-//   node index.js [asset.rva] [outDir]
+//   node index.js [asset] [outDir]
 //
-// One .rva asset is resolved and rendered across the canonical viewport matrix.
+// `asset` may be a filesystem path, a file:// URL, an http(s):// URL, or a
+// data: URL. One .rva asset is resolved and rendered across the canonical
+// viewport matrix.
 
 const fs = require("fs");
 const path = require("path");
 
 const rva = require("@rva/node");
 
-const assetPath = process.argv[2] || path.join(__dirname, "hero.rva");
+const asset = process.argv[2] || path.join(__dirname, "hero.rva");
 const outDir = process.argv[3] || path.join(__dirname, "out");
 
 const CANONICAL_SIZES = [
@@ -23,12 +25,12 @@ const CANONICAL_SIZES = [
   [2560, 800, "ultrawide"],
 ];
 
-function main() {
+async function main() {
   fs.mkdirSync(outDir, { recursive: true });
 
-  const handle = rva.open(new Uint8Array(fs.readFileSync(assetPath)));
+  const handle = await rva.openSource(asset);
   console.log(handle.describe());
-  console.log("asset:", path.relative(process.cwd(), assetPath));
+  console.log("asset:", asset.startsWith("http") ? asset : path.relative(process.cwd(), asset));
   console.log("");
 
   console.log(
@@ -54,4 +56,7 @@ function main() {
   }
 }
 
-main();
+main().catch((error) => {
+  console.error(error);
+  process.exitCode = 1;
+});

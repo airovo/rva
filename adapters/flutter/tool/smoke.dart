@@ -1,14 +1,14 @@
 // FFI smoke test for the Flutter adapter (no Flutter engine required).
 //
-//   RVA_FFI_LIB=<path to librva_ffi.dylib> dart run tool/smoke.dart <hero.rva>
-
-import 'dart:io';
+//   RVA_FFI_LIB=<path to librva_ffi.dylib> dart run tool/smoke.dart <asset>
+//
+// <asset> may be a filesystem path, a file:// URL or an http(s):// URL.
 
 import 'package:rva_flutter/rva_image.dart';
 
-void main(List<String> args) {
-  final path = args.isNotEmpty ? args[0] : 'hero.rva';
-  final image = RVAImage.open(File(path).readAsBytesSync());
+Future<void> main(List<String> args) async {
+  final source = args.isNotEmpty ? args[0] : 'hero.rva';
+  final image = await RVAImage.openSource(source);
   print(image.describe());
 
   for (final size in [
