@@ -17,7 +17,7 @@ import PackageDescription
 // before creating the version tag (see .github/workflows/release-swift.yml).
 //
 // Do not edit the `rvaFFI` line by hand; keep it a single line.
-let rvaFFI = Target.binaryTarget(name: "RVAFFI", path: "RVAFFI.xcframework")
+let rvaFFI = Target.binaryTarget(name: "RVAFFI", url: "https://github.com/airovo/rva/releases/download/v0.1.2/RVAFFI.xcframework.zip", checksum: "eac26e197271b3d557e41a2561d9239316775433823ec10eddb445d7d6ec605c")
 
 let package = Package(
     name: "RVA",
