@@ -1,5 +1,5 @@
 {
-  "name": "@rva/vue",
+  "name": "@airovo/rva-vue",
   "version": "0.1.0",
   "description": "Vue 3 wrapper for the <rva-image> web component.",
   "type": "module",
@@ -15,10 +15,11 @@
     "dist"
   ],
   "scripts": {
-    "build": "tsc -p ."
+    "build": "tsc -p .",
+    "prepublishOnly": "npm run build"
   },
   "dependencies": {
-    "@rva/web": "*"
+    "@airovo/rva-web": "^0.1.0"
   },
   "peerDependencies": {
     "vue": ">=3.3"
@@ -26,5 +27,18 @@
   "devDependencies": {
     "vue": "^3.4.0"
   },
-  "license": "MIT"
+  "license": "MIT",
+  "homepage": "https://rva.airovo.tech",
+  "author": "Airovo Technologies",
+  "publishConfig": {
+    "access": "public"
+  },
+  "keywords": [
+    "rva",
+    "responsive",
+    "visual-asset",
+    "adaptive",
+    "wasm",
+    "image"
+  ]
 }

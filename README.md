@@ -79,9 +79,9 @@ concern, and the bindings accept more than raw bytes:
 
 | Adapter | Accepted sources |
 |---|---|
-| `@rva/node` | `open(bytes)`; `openSource(path \| file:// \| http(s):// \| data:)` |
+| `@airovo/rva-node` | `open(bytes)`; `openSource(path \| file:// \| http(s):// \| data:)` |
 | `<rva-image>` (web / vue / svelte / react) | `src` via `fetch` (`http(s)`, `data:`, `blob:`, relative). For `file://` and custom protocols set the element's `bytes` or `srcResolver` |
-| `@rva/react-native` | `src`: bundled resource URI, `file://` or `http(s)://` (native modules read it); WebView fallback uses `fetch` |
+| `@airovo/rva-react-native` | `src`: bundled resource URI, `file://` or `http(s)://` (native modules read it); WebView fallback uses `fetch` |
 | Swift / Kotlin / Flutter | `open(bytes)`; `openSource(path \| file:// \| http(s)://)` |
 
 Browsers and WebViews cannot `fetch("file://…")` — pass `bytes`/`srcResolver`
@@ -190,7 +190,7 @@ RVA conformance is **two-dimensional**: cross-runtime equality plus
 semantic/spec invariants.
 
 ```bash
-./conformance/run.sh        # native (CLI) == WASM (@rva/node) == C ABI (rva_ffi)
+./conformance/run.sh        # native (CLI) == WASM (@airovo/rva-node) == C ABI (rva_ffi)
 ./corpus/run.sh             # build the 15-fixture torture corpus and verify
 ```
 

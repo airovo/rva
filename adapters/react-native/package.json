@@ -1,5 +1,5 @@
 {
-  "name": "@rva/react-native",
+  "name": "@airovo/rva-react-native",
   "version": "0.1.0",
   "description": "React Native adapter for RVA: renders the <rva-image> web component (WASM core) inside a WebView, with an optional native-module path over the shared C ABI.",
   "type": "module",
@@ -13,13 +13,16 @@
   },
   "files": [
     "dist",
-    "ios",
-    "android",
     "RNRva.podspec",
-    "react-native.config.js"
+    "react-native.config.js",
+    "ios/RNRva.m",
+    "ios/RNRva.swift",
+    "android/build.gradle",
+    "android/src"
   ],
   "scripts": {
-    "build": "tsc -p ."
+    "build": "tsc -p .",
+    "prepublishOnly": "npm run build"
   },
   "peerDependencies": {
     "react": ">=18",
@@ -33,5 +36,18 @@
     "react-native-webview": "^13.12.0",
     "typescript": "^5.6.0"
   },
-  "license": "MIT"
+  "license": "MIT",
+  "homepage": "https://rva.airovo.tech",
+  "author": "Airovo Technologies",
+  "publishConfig": {
+    "access": "public"
+  },
+  "keywords": [
+    "rva",
+    "responsive",
+    "visual-asset",
+    "adaptive",
+    "wasm",
+    "image"
+  ]
 }

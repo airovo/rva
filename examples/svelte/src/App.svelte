@@ -1,5 +1,5 @@
 <script>
-  import RVAImage from "@rva/svelte";
+  import RVAImage from "@airovo/rva-svelte";
 
   let status = "resolving…";
 

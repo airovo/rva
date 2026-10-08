@@ -1,5 +1,5 @@
 {
-  "name": "@rva/web",
+  "name": "@airovo/rva-web",
   "platform": "web",
   "language": "typescript",
   "runtime": "browser",

@@ -1,4 +1,4 @@
-// @rva/react-native — React Native adapter for RVA.
+// @airovo/rva-react-native — React Native adapter for RVA.
 //
 // Architecture (TS API -> native module -> Kotlin/Swift -> Rust core):
 //
@@ -61,7 +61,7 @@ export interface RVAImageProps extends ViewProps {
   baseUrl?: string;
 }
 
-const DEFAULT_BASE_URL = "https://unpkg.com/@rva/web";
+const DEFAULT_BASE_URL = "https://unpkg.com/@airovo/rva-web";
 
 /** Build the WebView fallback document hosting <rva-image>. */
 export function rvaHtml(src: string, alt: string, baseUrl: string): string {

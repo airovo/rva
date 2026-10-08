@@ -10,7 +10,7 @@
 // resize, exactly like a responsive UI component.
 
 import init, { load, type RvaHandle } from "./pkg/rva_wasm.js";
-import type { Paint, ResolvedCtaRegion, ResolvedItem, ResolvedScene } from "@rva/types";
+import type { Paint, ResolvedCtaRegion, ResolvedItem, ResolvedScene } from "@airovo/rva-types";
 
 /** A CTA region activation: the stable id plus its resolved geometry. */
 export interface RvaCtaActivation {
@@ -356,7 +356,7 @@ export class RvaImage extends HTMLElement {
     if (src.startsWith("file://")) {
       throw new Error(
         "file:// sources cannot be fetched here — set `bytes` or `srcResolver` " +
-          "(Tauri: use convertFileSrc; Node: use @rva/node openSource)"
+          "(Tauri: use convertFileSrc; Node: use @airovo/rva-node openSource)"
       );
     }
     const response = await fetch(src);

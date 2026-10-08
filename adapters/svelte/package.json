@@ -1,5 +1,5 @@
 {
-  "name": "@rva/svelte",
+  "name": "@airovo/rva-svelte",
   "version": "0.1.0",
   "description": "Svelte wrapper for the <rva-image> web component.",
   "type": "module",
@@ -17,7 +17,7 @@
     "check": "node scripts/check.mjs"
   },
   "dependencies": {
-    "@rva/web": "*"
+    "@airovo/rva-web": "^0.1.0"
   },
   "peerDependencies": {
     "svelte": ">=4"
@@ -25,5 +25,18 @@
   "devDependencies": {
     "svelte": "^4.2.0"
   },
-  "license": "MIT"
+  "license": "MIT",
+  "homepage": "https://rva.airovo.tech",
+  "author": "Airovo Technologies",
+  "publishConfig": {
+    "access": "public"
+  },
+  "keywords": [
+    "rva",
+    "responsive",
+    "visual-asset",
+    "adaptive",
+    "wasm",
+    "image"
+  ]
 }

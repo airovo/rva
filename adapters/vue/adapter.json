@@ -1,10 +1,10 @@
 {
-  "name": "@rva/vue",
+  "name": "@airovo/rva-vue",
   "platform": "vue",
   "language": "typescript",
   "runtime": "browser",
   "status": "implemented",
-  "core_bridge": "wraps @rva/web",
+  "core_bridge": "wraps @airovo/rva-web",
   "entry": "src/index.ts",
   "example": "examples/vue"
 }

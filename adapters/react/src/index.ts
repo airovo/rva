@@ -1,9 +1,9 @@
-// @rva/react — React wrapper for the framework-neutral <rva-image> web
+// @airovo/rva-react — React wrapper for the framework-neutral <rva-image> web
 // component. This is a thin binding: it registers the element (import
-// "@rva/web") and renders it, so React apps get first-class ergonomics over the
+// "@airovo/rva-web") and renders it, so React apps get first-class ergonomics over the
 // same WASM core.
 //
-//   import { RVAImage } from "@rva/react";
+//   import { RVAImage } from "@airovo/rva-react";
 //
 //   <RVAImage
 //     src="/hero.rva"
@@ -28,7 +28,7 @@ import {
   type MutableRefObject,
   type ReactNode,
 } from "react";
-import "@rva/web";
+import "@airovo/rva-web";
 
 /* ------------------------------- event types ------------------------------- */
 

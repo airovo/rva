@@ -1,5 +1,5 @@
 {
-  "name": "@rva/react-native",
+  "name": "@airovo/rva-react-native",
   "platform": "react-native",
   "language": "typescript + kotlin + swift",
   "runtime": "ios/android",

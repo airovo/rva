@@ -6,7 +6,7 @@
 //
 // Compares three independent runtime paths over a continuous size matrix:
 //   - native  : the Rust CLI (`rva inspect --compact`)
-//   - wasm    : @rva/node's WASM core (wasm-bindgen)
+//   - wasm    : @airovo/rva-node's WASM core (wasm-bindgen)
 //   - c-abi   : a C program linking librva_ffi (ffi/include/rva.h)
 //
 // All three serialize the same Rust ResolvedScene via serde_json, so the raw
@@ -44,7 +44,7 @@ for (let i = 0; i < 60; i++) {
 }
 fs.writeFileSync(sizesFile, sizes.map(([w, h]) => `${w} ${h}`).join("\n"));
 
-const rva = require("@rva/node");
+const rva = require("@airovo/rva-node");
 let failures = 0;
 
 for (const fixture of fixtureList) {

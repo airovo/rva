@@ -8,7 +8,7 @@ export default defineConfig({
       template: { compilerOptions: { isCustomElement: (tag) => tag === "rva-image" } },
     }),
   ],
-  optimizeDeps: { exclude: ["@rva/web"] },
+  optimizeDeps: { exclude: ["@airovo/rva-web"] },
   assetsInclude: ["**/*.wasm"],
   server: { fs: { allow: ["..", "../.."] } },
 });

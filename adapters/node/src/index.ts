@@ -1,4 +1,4 @@
-// @rva/node — Node.js / server adapter for RVA.
+// @airovo/rva-node — Node.js / server adapter for RVA.
 //
 // Uniform adapter surface (see adapters/contract.json):
 //   open(bytes)                 -> handle
@@ -11,10 +11,10 @@
 import { load, type RvaHandle } from "./pkg/rva_wasm.js";
 import { mimeFor, renderToSvg } from "./render-svg.js";
 import { readSource, type RvaSource } from "./source.js";
-import type { ResolvedScene } from "@rva/types";
+import type { ResolvedScene } from "@airovo/rva-types";
 
 export type { RvaHandle } from "./pkg/rva_wasm.js";
-export type { ResolvedScene, ResolvedItem, Scene } from "@rva/types";
+export type { ResolvedScene, ResolvedItem, Scene } from "@airovo/rva-types";
 export { readSource };
 export type { RvaSource };
 

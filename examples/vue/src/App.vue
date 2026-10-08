@@ -1,6 +1,6 @@
 <script setup lang="ts">
 import { ref } from "vue";
-import { RVAImage } from "@rva/vue";
+import { RVAImage } from "@airovo/rva-vue";
 
 interface RenderDetail {
   topology: string;

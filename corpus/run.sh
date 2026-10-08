@@ -10,7 +10,7 @@ cargo build --manifest-path "$root/Cargo.toml" -p rva-cli -p rva-ffi
 
 echo "refreshing WASM bindings..."
 node "$root/adapters/node/build.js" >/dev/null
-(cd "$root" && npm run build -w @rva/node >/dev/null)
+(cd "$root" && npm run build -w @airovo/rva-node >/dev/null)
 
 echo "compiling C ABI runner..."
 cc "$root/conformance/cabi_dump.c" \

@@ -1,4 +1,4 @@
-// @rva/types — TypeScript definitions for the RVA scene model and resolved
+// @airovo/rva-types — TypeScript definitions for the RVA scene model and resolved
 // scene, generated from the Rust core (`core/src/bin/export_types.rs`) so the
 // TypeScript adapters cannot drift from the core.
 //

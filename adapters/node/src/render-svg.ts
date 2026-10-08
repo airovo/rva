@@ -5,7 +5,7 @@
 // keeps text semantic (no bundled fonts required) while still embedding the
 // raster/vector resources as data URIs.
 
-import type { Paint, ResolvedItem, ResolvedScene } from "@rva/types";
+import type { Paint, ResolvedItem, ResolvedScene } from "@airovo/rva-types";
 import type { RvaHandle } from "./pkg/rva_wasm.js";
 
 const FONT_STACKS: Record<string, string> = {

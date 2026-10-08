@@ -1,8 +1,8 @@
 import React from "react";
 import { Platform, SafeAreaView, StyleSheet, Text, View } from "react-native";
-import { RVAImage } from "@rva/react-native";
+import { RVAImage } from "@airovo/rva-react-native";
 
-// The .rva asset and the @rva/web runtime are fetched by the WebView, so both
+// The .rva asset and the @airovo/rva-web runtime are fetched by the WebView, so both
 // need to be reachable from the device. 10.0.2.2 is the Android emulator's
 // alias for the host machine; iOS simulators can use localhost.
 const HOST = Platform.select({ android: "10.0.2.2", default: "localhost" });

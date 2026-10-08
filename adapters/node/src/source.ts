@@ -1,4 +1,4 @@
-// Convenience source loading for @rva/node.
+// Convenience source loading for @airovo/rva-node.
 //
 // The normative primitive stays `open(bytes)` (see adapters/contract.json).
 // This layer resolves the common ways an asset is addressed so callers can pass

@@ -17,9 +17,9 @@
     "examples/react-native"
   ],
   "scripts": {
-    "generate:types": "npm run generate -w @rva/types",
-    "build": "npm run build -w @rva/types && npm run build -w @rva/web && npm run build -w @rva/node && npm run build -w @rva/react && npm run build -w @rva/vue && npm run build -w @rva/react-native",
-    "check:svelte": "npm run check -w @rva/svelte",
+    "generate:types": "npm run generate -w @airovo/rva-types",
+    "build": "npm run build -w @airovo/rva-types && npm run build -w @airovo/rva-web && npm run build -w @airovo/rva-node && npm run build -w @airovo/rva-react && npm run build -w @airovo/rva-vue && npm run build -w @airovo/rva-react-native",
+    "check:svelte": "npm run check -w @airovo/rva-svelte",
     "build:wasm": "./adapters/web/build.sh && node adapters/node/build.js"
   },
   "devDependencies": {

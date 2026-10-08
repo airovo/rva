@@ -2,7 +2,7 @@
   "name": "rva-example-react-native",
   "private": true,
   "version": "0.1.0",
-  "description": "Example: render a .rva asset with @rva/react-native (WebView adapter).",
+  "description": "Example: render a .rva asset with @airovo/rva-react-native (WebView adapter).",
   "scripts": {
     "start": "react-native start",
     "android": "react-native run-android",
@@ -10,7 +10,7 @@
     "typecheck": "tsc --noEmit"
   },
   "dependencies": {
-    "@rva/react-native": "*",
+    "@airovo/rva-react-native": "*",
     "react": "^18.3.1",
     "react-native": "^0.76.0",
     "react-native-webview": "^13.12.0"

@@ -1,5 +1,5 @@
 {
-  "name": "@rva/web",
+  "name": "@airovo/rva-web",
   "version": "0.1.0",
   "description": "Framework-neutral <rva-image> web component backed by the RVA WASM core.",
   "type": "module",
@@ -17,10 +17,24 @@
   "scripts": {
     "build": "tsc -p . && rm -rf dist/pkg && cp -R src/pkg dist/pkg",
     "build:wasm": "./build.sh",
-    "clean": "rm -rf dist"
+    "clean": "rm -rf dist",
+    "prepublishOnly": "npm run build"
   },
   "dependencies": {
-    "@rva/types": "*"
+    "@airovo/rva-types": "^0.1.0"
   },
-  "license": "MIT"
+  "license": "MIT",
+  "homepage": "https://rva.airovo.tech",
+  "author": "Airovo Technologies",
+  "publishConfig": {
+    "access": "public"
+  },
+  "keywords": [
+    "rva",
+    "responsive",
+    "visual-asset",
+    "adaptive",
+    "wasm",
+    "image"
+  ]
 }

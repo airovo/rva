@@ -1,7 +1,7 @@
 // Adversarial verification of the RVA Torture Corpus.
 //
 // Two dimensions:
-//   1. CROSS-RUNTIME : native (Rust CLI) == WASM (@rva/node) == C ABI (librva_ffi)
+//   1. CROSS-RUNTIME : native (Rust CLI) == WASM (@airovo/rva-node) == C ABI (librva_ffi)
 //                      over a continuous matrix plus boundary fuzzing around
 //                      every topology threshold (…-0.00001, exact, +0.00001…).
 //   2. SPEC BEHAVIOR : the ResolvedScene satisfies semantic invariants
@@ -25,7 +25,7 @@ const rvaBin = path.join(root, "target", "debug", "rva");
 const cabiBin = path.join(here, "cabi_dump");
 const sizesFile = path.join(here, "sizes.txt");
 
-const rva = require("@rva/node");
+const rva = require("@airovo/rva-node");
 
 // --- size matrices ----------------------------------------------------------
 

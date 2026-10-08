@@ -1,6 +1,6 @@
 "use strict";
 
-// Node.js example for the @rva/node adapter (installed from the workspace).
+// Node.js example for the @airovo/rva-node adapter (installed from the workspace).
 //
 //   node index.js [asset] [outDir]
 //
@@ -11,7 +11,7 @@
 const fs = require("fs");
 const path = require("path");
 
-const rva = require("@rva/node");
+const rva = require("@airovo/rva-node");
 
 const asset = process.argv[2] || path.join(__dirname, "hero.rva");
 const outDir = process.argv[3] || path.join(__dirname, "out");

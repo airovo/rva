@@ -1,5 +1,5 @@
 {
-  "name": "@rva/node",
+  "name": "@airovo/rva-node",
   "platform": "node",
   "language": "typescript",
   "runtime": "node",

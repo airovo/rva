@@ -1,5 +1,5 @@
 import { useMemo, useRef, useState } from "react";
-import { RVAImage, type CtaRegion } from "@rva/react";
+import { RVAImage, type CtaRegion } from "@airovo/rva-react";
 
 // The <rva-image> source escape hatches (set from a ref; JSX can't pass objects).
 interface RvaImageElement extends HTMLElement {

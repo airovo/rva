@@ -1,12 +1,12 @@
-// @rva/vue — Vue 3 wrapper for the framework-neutral <rva-image> web component.
+// @airovo/rva-vue — Vue 3 wrapper for the framework-neutral <rva-image> web component.
 //
 //   <script setup>
-//   import { RVAImage } from "@rva/vue";
+//   import { RVAImage } from "@airovo/rva-vue";
 //   </script>
 //   <RVAImage src="/hero.rva" alt="Hero" style="width:100%;aspect-ratio:16/9" />
 
 import { defineComponent, h, type PropType } from "vue";
-import "@rva/web";
+import "@airovo/rva-web";
 
 export const RVAImage = defineComponent({
   name: "RVAImage",

@@ -2,14 +2,14 @@
   "name": "rva-example-vue",
   "private": true,
   "type": "module",
-  "description": "Example: render a .rva asset with the @rva/vue wrapper.",
+  "description": "Example: render a .rva asset with the @airovo/rva-vue wrapper.",
   "scripts": {
     "dev": "vite",
     "build": "vite build",
     "preview": "vite preview"
   },
   "dependencies": {
-    "@rva/vue": "*",
+    "@airovo/rva-vue": "*",
     "vue": "^3.4.38"
   },
   "devDependencies": {

@@ -1,5 +1,5 @@
 {
-  "name": "@rva/node",
+  "name": "@airovo/rva-node",
   "version": "0.1.0",
   "description": "Node.js/server adapter for RVA: resolve and render .rva assets.",
   "main": "dist/index.js",
@@ -10,10 +10,24 @@
   "scripts": {
     "build": "tsc -p . && rm -rf dist/pkg && cp -R src/pkg dist/pkg",
     "build:wasm": "node build.js",
-    "clean": "rm -rf dist"
+    "clean": "rm -rf dist",
+    "prepublishOnly": "npm run build"
   },
   "dependencies": {
-    "@rva/types": "*"
+    "@airovo/rva-types": "^0.1.0"
   },
-  "license": "MIT"
+  "license": "MIT",
+  "homepage": "https://rva.airovo.tech",
+  "author": "Airovo Technologies",
+  "publishConfig": {
+    "access": "public"
+  },
+  "keywords": [
+    "rva",
+    "responsive",
+    "visual-asset",
+    "adaptive",
+    "wasm",
+    "image"
+  ]
 }

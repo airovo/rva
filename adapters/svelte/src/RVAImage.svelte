@@ -1,15 +1,15 @@
 <!--
-  @rva/svelte — Svelte wrapper for the framework-neutral <rva-image> web
-  component. Importing "@rva/web" registers the custom element.
+  @airovo/rva-svelte — Svelte wrapper for the framework-neutral <rva-image> web
+  component. Importing "@airovo/rva-web" registers the custom element.
 
     <script>
-      import RVAImage from "@rva/svelte";
+      import RVAImage from "@airovo/rva-svelte";
     </script>
     <RVAImage src="/hero.rva" alt="Hero" style="width:100%;aspect-ratio:16/9" />
 -->
 <script>
   import { createEventDispatcher } from "svelte";
-  import "@rva/web";
+  import "@airovo/rva-web";
 
   const dispatch = createEventDispatcher();
 

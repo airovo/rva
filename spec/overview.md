@@ -111,7 +111,7 @@ Changing the advance model is a resolver-profile change.
 three independent runtimes and asserts byte-identical `ResolvedScene` JSON:
 
 - native — Rust CLI (`rva inspect --compact`)
-- WASM — `wasm-bindgen` core via `@rva/node`
+- WASM — `wasm-bindgen` core via `@airovo/rva-node`
 - C ABI — a C program linking `librva_ffi`
 
 ```

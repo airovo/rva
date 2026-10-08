@@ -90,10 +90,10 @@
     <div class="badge" id="cta">no CTA regions</div>
 
     <script type="importmap">
-      { "imports": { "@rva/web": "../../adapters/web/dist/rva-image.js?v=2" } }
+      { "imports": { "@airovo/rva-web": "../../adapters/web/dist/rva-image.js?v=2" } }
     </script>
     <script type="module">
-      import "@rva/web";
+      import "@airovo/rva-web";
 
       const hero = document.getElementById("hero");
       const stage = document.getElementById("stage");
@@ -102,7 +102,7 @@
 
       // Guard against a stale cached adapter build (pre-callback API).
       if (!("onCta" in hero)) {
-        status.textContent = "stale @rva/web build — hard reload (⌘⇧R)";
+        status.textContent = "stale @airovo/rva-web build — hard reload (⌘⇧R)";
       }
 
       let hits = 0;

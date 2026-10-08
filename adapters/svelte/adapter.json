@@ -1,10 +1,10 @@
 {
-  "name": "@rva/svelte",
+  "name": "@airovo/rva-svelte",
   "platform": "svelte",
   "language": "svelte",
   "runtime": "browser",
   "status": "implemented",
-  "core_bridge": "wraps @rva/web",
+  "core_bridge": "wraps @airovo/rva-web",
   "entry": "src/RVAImage.svelte",
   "example": "examples/svelte"
 }
