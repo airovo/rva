@@ -98,8 +98,10 @@ Triggered manually (**Actions → Release (pub.dev) → Run workflow**); runs
 `flutter pub publish` via pub.dev **Automated publishing (OIDC)**.
 
 One-time setup: publish once manually (`cd adapters/flutter && flutter pub publish`),
-then pub.dev → `rva_flutter` → Admin → Automated publishing → GitHub Actions, repo
-`airovo/rva`, workflow `release-flutter.yml`.
+transfer the package to the verified publisher, then pub.dev → `rva_flutter` → Admin
+→ Automated publishing → GitHub Actions: repository `airovo/rva`, tag pattern
+`rva_flutter-v{{version}}`, and enable **workflow_dispatch** events (no workflow
+filename is configured — pub.dev matches on repo + event).
 
 Before running, bump `adapters/flutter/pubspec.yaml` `version` and add a
 `CHANGELOG.md` entry.
