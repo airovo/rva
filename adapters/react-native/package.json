@@ -1,6 +1,6 @@
 {
   "name": "@airovo/rva-react-native",
-  "version": "0.1.0",
+  "version": "0.1.1",
   "description": "React Native adapter for RVA: renders the <rva-image> web component (WASM core) inside a WebView, with an optional native-module path over the shared C ABI.",
   "type": "module",
   "main": "dist/index.js",

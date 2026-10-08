@@ -1,6 +1,6 @@
 {
   "name": "@airovo/rva-types",
-  "version": "0.1.0",
+  "version": "0.1.1",
   "description": "TypeScript definitions for the RVA scene model and resolved scene, generated from the Rust core.",
   "type": "module",
   "types": "dist/index.d.ts",
