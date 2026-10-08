@@ -27,7 +27,8 @@ jobs:
         with:
           distribution: temurin
           java-version: "17"
-      - uses: android-actions/setup-android@v3
+      # The ubuntu-latest runner already provides the Android SDK (ANDROID_HOME);
+      # AGP downloads any missing platform/build-tools automatically.
       - name: Publish to Maven Central
         working-directory: adapters/kotlin
         env:
