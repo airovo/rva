@@ -1,3 +1,7 @@
+## 0.1.2
+
+- Maintenance release published through pub.dev automated publishing (CI).
+
 ## 0.1.1
 
 - Ship the core as a proper Flutter FFI plugin: Android `jniLibs` and an Apple

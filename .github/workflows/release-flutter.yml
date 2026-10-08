@@ -4,7 +4,8 @@ name: Release (pub.dev)
 #
 # Auth: pub.dev Automated publishing (OIDC) — configure it once at
 #   https://pub.dev/packages/rva_flutter/admin  -> Automated publishing:
-#     Source: GitHub Actions, repository: airovo/rva, workflow: release-flutter.yml
+#     repository: airovo/rva, workflow: release-flutter.yml
+#     enable: workflow_dispatch events only (manual releases)
 # The package must already exist (first publish is manual).
 # Fallback: set the PUBLISH_TOKEN secret and uncomment NODE... -> see below.
 
