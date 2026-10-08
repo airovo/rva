@@ -5,7 +5,7 @@
 #   scripts/build-native-libs.sh [--skip-apple] [--skip-android] [--skip-kotlin-aar]
 #
 # Outputs:
-#   Apple   : adapters/swift/RVAFFI.xcframework
+#   Apple   : target/RVAFFI.xcframework             (consumed by airovo/rva-swift)
 #             adapters/react-native/ios/RVAFFI.xcframework        (copy)
 #   Android : adapters/kotlin/src/main/jniLibs/<abi>/librva_ffi.so  (JNI)
 #             adapters/flutter/native/android/<abi>/librva_ffi.so  (JNI)
@@ -41,12 +41,12 @@ if [ "$DO_APPLE" = 1 ]; then
   [ "$(uname -s)" = "Darwin" ] || die "Apple libraries require macOS. Use --skip-apple."
 
   log "Apple: building RVAFFI.xcframework (macOS + iOS device + simulator)"
-  bash adapters/swift/build-xcframework.sh
+  bash scripts/build-xcframework.sh
 
   log "Apple: copying xcframework into react-native/ios"
   mkdir -p adapters/react-native/ios
   rm -rf adapters/react-native/ios/RVAFFI.xcframework
-  cp -R adapters/swift/RVAFFI.xcframework adapters/react-native/ios/RVAFFI.xcframework
+  cp -R target/RVAFFI.xcframework adapters/react-native/ios/RVAFFI.xcframework
 
   # Flutter (macOS) loads a dylib, not the static xcframework slice.
   case "$(uname -m)" in

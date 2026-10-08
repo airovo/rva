@@ -170,7 +170,8 @@ cargo run -p rva-server
 
 ### Native adapters
 
-- **Swift** — `adapters/swift` (FFI + Swift Package), `examples/swift`
+- **Swift** — lived in [`airovo/rva-swift`](https://github.com/airovo/rva-swift)
+  (Swift Package, Apple-only) — it pins the `RVAFFI.xcframework` this repo builds.
 - **Kotlin/Android** — `adapters/kotlin` (JNI + AAR), `examples/kotlin`
 - **Flutter** — `adapters/flutter` (Dart FFI widget), `examples/flutter`
 
@@ -184,7 +185,7 @@ AAR). Rebuild every one from the current core after changing `rva-core`:
 ./scripts/build-native-libs.sh --skip-apple # Android only (Linux CI)
 ```
 
-Outputs: `adapters/swift/RVAFFI.xcframework` (+ copied into
+Outputs: `target/RVAFFI.xcframework` (published as a release asset and copied into
 `adapters/react-native/ios/`), `adapters/kotlin/src/main/jniLibs/<abi>/`,
 `adapters/flutter/native/{android,macos}/`, and
 `adapters/kotlin/build/outputs/aar/rva-kotlin-release.aar`. Requires Xcode

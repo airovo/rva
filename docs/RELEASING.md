@@ -52,36 +52,38 @@ git tag v0.1.1
 git push origin v0.1.1
 ```
 
-…or let the Swift workflow create the tag (see below). Either way the tag triggers
-the workflow, which authenticates over OIDC.
+The tag triggers the workflow, which authenticates over OIDC.
+
+## Apple binary (xcframework)
+
+Workflow: [`.github/workflows/release-xcframework.yml`](../.github/workflows/release-xcframework.yml).
+Runs on a core tag `vX.Y.Z` (and on `workflow_dispatch`). It builds
+`RVAFFI.xcframework` (macOS + iOS device + simulator) as a **dynamic** framework
+(~11 MB, ~5 MB zipped; a static lib would be ~135 MB) and attaches
+`RVAFFI.xcframework.zip` to the release for that tag. The Swift package and the
+React Native iOS adapter consume this asset.
 
 ## Swift / SPM
 
-Workflow: [`.github/workflows/release-swift.yml`](../.github/workflows/release-swift.yml).
-Triggered manually (**Actions → Release (Swift / SPM) → Run workflow**) with a
-version that matches `Cargo.toml`. It:
+The Swift package lives in a **separate repo**: [`airovo/rva-swift`](https://github.com/airovo/rva-swift).
+It is an independent, Apple-only package that pins a core binary by URL + checksum,
+so it versions **independently** of the core (and isn't polluted by this repo's
+tags, which matters for the Swift Package Index).
 
-1. builds `RVAFFI.xcframework` (macOS + iOS device + simulator) as a **dynamic**
-   framework (~11 MB, ~5 MB zipped; a static lib would be ~135 MB),
-2. zips it and computes the SwiftPM checksum,
-3. rewrites `adapters/swift/Package.swift`'s binary target to the release
-   `url:` + `checksum:`,
-4. commits that on a `release-swift/vX.Y.Z` branch, creates and pushes tag
-   `vX.Y.Z`,
-5. creates the GitHub Release and uploads `RVAFFI.xcframework.zip`.
-
-Why the workflow owns the tag: SwiftPM reads the checksum from `Package.swift` at
-the version tag, and the checksum only exists after the binary is built — so the
-tag has to be created after the manifest is patched.
-
-`main` keeps the development manifest (`binaryTarget(path: "RVAFFI.xcframework")`);
-only the tagged commit points at the release asset. Pushing the tag also triggers
-the crates.io workflow, which skips versions already published.
-
-Consumers:
+Its `Package.swift` reads:
 
 ```swift
-.package(url: "https://github.com/airovo/rva", from: "0.1.2")
+let rvaFFIUrl = "https://github.com/airovo/rva/releases/download/vX.Y.Z/RVAFFI.xcframework.zip"
+let rvaFFIChecksum = "..."
+```
+
+To release: in `airovo/rva-swift`, run **Actions → Release** with a new `version`
+and the `core_tag` to pin. That workflow downloads the core's `RVAFFI.xcframework.zip`,
+recomputes the SwiftPM checksum (the archive's SHA-256), commits the pin to `main`,
+and tags the new version. Consumers:
+
+```swift
+.package(url: "https://github.com/airovo/rva-swift", from: "0.1.0")
 ```
 
 ## Versioning
@@ -89,13 +91,14 @@ Consumers:
 There are two version axes:
 
 - **Core** — the Cargo workspace (`rva-core`, `rva-wasm`, `rva-ffi`, `rva-cli`,
-  `rva-server`). One version; it is what affects cross-runtime determinism. The
-  Swift package shares this stream (its SPM tag equals the core version).
-- **Adapters** — each npm package, and Kotlin / Flutter. Versioned **independently**
-  (Changesets for npm; the `version` field in each native manifest). An adapter-only
-  change (e.g. a DOM fix in `@airovo/rva-web`) ships without touching the core;
-  a core change that alters resolution requires re-releasing the adapters that
-  bundle the WASM (`rva-web`, `rva-node`) or the native binaries.
+  `rva-server`). One version; it is what affects cross-runtime determinism. Its
+  `vX.Y.Z` tags also name the xcframework release asset.
+- **Adapters** — each npm package, Swift, Kotlin, Flutter. Versioned
+  **independently** (Changesets for npm; a separate repo/tags for Swift; the
+  `version` field for the others). An adapter-only change (e.g. a DOM fix in
+  `@airovo/rva-web`) ships without touching the core; a core change that alters
+  resolution requires re-releasing the adapters that bundle the WASM
+  (`rva-web`, `rva-node`) or the native binaries.
 
 `scripts/check-versions.mjs` enforces only what must agree:
 

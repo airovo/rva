@@ -33,8 +33,8 @@ One contract, many platforms — see [`adapters/contract.json`](../adapters/cont
   Svelte: [`@airovo/rva-svelte`](../adapters/svelte/README.md).
 - React Native: [`@airovo/rva-react-native`](../adapters/react-native/README.md).
 - Types: [`@airovo/rva-types`](../adapters/types) — generated from the Rust core.
-- Native: [Swift](../adapters/swift) · [Kotlin](../adapters/kotlin) ·
-  [Flutter](../adapters/flutter).
+- Native: [Swift](https://github.com/airovo/rva-swift) (separate repo) ·
+  [Kotlin](../adapters/kotlin) · [Flutter](../adapters/flutter).
 
 ## Conformance & testing
 

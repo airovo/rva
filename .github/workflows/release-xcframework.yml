@@ -1,0 +1,59 @@
+name: Release (xcframework)
+
+# Builds the Apple binary (RVAFFI.xcframework) for the core and attaches it to the
+# release for the pushed tag. Consumers: the Swift package (airovo/rva-swift) pins
+# it by URL + checksum, and the React Native iOS adapter vendors it.
+
+on:
+  push:
+    tags:
+      - "v*"
+  workflow_dispatch:
+
+concurrency:
+  group: release-xcframework-${{ github.ref }}
+  cancel-in-progress: false
+
+jobs:
+  build:
+    name: Build & attach RVAFFI.xcframework
+    runs-on: macos-14
+    permissions:
+      contents: write
+    steps:
+      - uses: actions/checkout@v4
+      - uses: dtolnay/rust-toolchain@master
+        with:
+          toolchain: "1.96.0"
+          targets: aarch64-apple-darwin,aarch64-apple-ios,aarch64-apple-ios-sim,x86_64-apple-ios
+      - name: Build the xcframework
+        run: bash scripts/build-xcframework.sh
+      - name: Zip and checksum
+        id: pkg
+        run: |
+          cd target
+          ditto -c -k --sequesterRsrc --keepParent RVAFFI.xcframework RVAFFI.xcframework.zip
+          checksum="$(shasum -a 256 RVAFFI.xcframework.zip | awk '{print $1}')"
+          echo "checksum=$checksum" >> "$GITHUB_OUTPUT"
+          echo "RVAFFI.xcframework.zip sha256: $checksum"
+      - name: Attach to the release
+        env:
+          GH_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+        run: |
+          if [ "${GITHUB_REF_TYPE:-}" != "tag" ]; then
+            echo "workflow_dispatch without a tag — built only, not publishing."
+            exit 0
+          fi
+          tag="${GITHUB_REF_NAME}"
+          gh release view "$tag" >/dev/null 2>&1 || \
+            gh release create "$tag" --title "$tag" --notes "RVA core $tag"
+          gh release upload "$tag" target/RVAFFI.xcframework.zip --clobber
+      - name: Summary
+        run: |
+          {
+            echo "### RVAFFI.xcframework"
+            echo ""
+            echo "SwiftPM checksum (SHA-256): \`${{ steps.pkg.outputs.checksum }}\`"
+            echo ""
+            echo "Pin this in airovo/rva-swift via the Release workflow."
+          } >> "$GITHUB_STEP_SUMMARY"

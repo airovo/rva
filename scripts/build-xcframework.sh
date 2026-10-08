@@ -1,7 +1,10 @@
 #!/usr/bin/env bash
 # Build the Rust core for Apple platforms and package it as RVAFFI.xcframework.
 #
-#   ./adapters/swift/build-xcframework.sh
+#   ./scripts/build-xcframework.sh
+#
+# The result (target/RVAFFI.xcframework) is attached to core releases and consumed
+# by the Swift package (airovo/rva-swift) and the React Native iOS adapter.
 #
 # Requires: rustup + Xcode.
 #
@@ -13,8 +16,8 @@
 set -euo pipefail
 
 here="$(cd "$(dirname "$0")" && pwd)"
-root="$(cd "$here/../.." && pwd)"
-out="$here/RVAFFI.xcframework"
+root="$(cd "$here/.." && pwd)"
+out="$root/target/RVAFFI.xcframework"
 
 version="$(grep -m1 -E '^version = ' "$root/Cargo.toml" | sed -E 's/.*"(.*)".*/\1/')"
 install_name="@rpath/RVAFFI.framework/RVAFFI"
