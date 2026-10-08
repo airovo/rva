@@ -25,16 +25,19 @@ A single entry point into the RVA repository. New here? Start with the
 ## Adapters
 
 One contract, many platforms — see [`adapters/contract.json`](../adapters/contract.json).
+Registry + install snippets are in the [root README](../README.md#packages).
 
-- Web: [`@airovo/rva-web`](../adapters/web/README.md) — the `<rva-image>` element.
-- Node/server: [`@airovo/rva-node`](../adapters/node/README.md).
-- React: [`@airovo/rva-react`](../adapters/react/README.md) ·
-  Vue: [`@airovo/rva-vue`](../adapters/vue/README.md) ·
-  Svelte: [`@airovo/rva-svelte`](../adapters/svelte/README.md).
-- React Native: [`@airovo/rva-react-native`](../adapters/react-native/README.md).
-- Types: [`@airovo/rva-types`](../adapters/types) — generated from the Rust core.
-- Native: [Swift](https://github.com/airovo/rva-swift) (separate repo) ·
-  [Kotlin](../adapters/kotlin) · [Flutter](../adapters/flutter).
+- Web: [`@airovo/rva-web`](../adapters/web/README.md) (npm) — the `<rva-image>` element.
+- Node/server: [`@airovo/rva-node`](../adapters/node/README.md) (npm).
+- React: [`@airovo/rva-react`](../adapters/react/README.md) (npm) ·
+  Vue: [`@airovo/rva-vue`](../adapters/vue/README.md) (npm) ·
+  Svelte: [`@airovo/rva-svelte`](../adapters/svelte/README.md) (npm).
+- React Native: [`@airovo/rva-react-native`](../adapters/react-native/README.md) (npm).
+- Types: [`@airovo/rva-types`](../adapters/types) (npm) — generated from the Rust core.
+- Native: [Swift](../adapters/swift/README.md) (SwiftPM — separate repo
+  [airovo/rva-swift](https://github.com/airovo/rva-swift)) ·
+  [Kotlin](../adapters/kotlin/README.md) (Maven Central) ·
+  [Flutter](../adapters/flutter/README.md) (pub.dev).
 
 ## Conformance & testing
 

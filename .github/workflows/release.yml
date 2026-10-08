@@ -1,4 +1,4 @@
-name: Release
+name: Release (npm)
 
 # Versioning + publishing via Changesets.
 #   - On push to main: opens/updates a "Version Packages" PR.

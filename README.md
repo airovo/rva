@@ -24,6 +24,32 @@ adapters**, together with the conformance suite and test corpora.
 
 ---
 
+## Packages
+
+The core is a resolver; the adapters only render its output. Everything is MIT
+licensed and published to the usual registries:
+
+| Package | Registry | Install |
+| --- | --- | --- |
+| `rva-core` | [crates.io](https://crates.io/crates/rva-core) | `cargo add rva-core` |
+| `rva-cli` (`rva` binary) | [crates.io](https://crates.io/crates/rva-cli) | `cargo install rva-cli` |
+| `rva-server` | [crates.io](https://crates.io/crates/rva-server) | `cargo install rva-server` |
+| `@airovo/rva-web` | [npm](https://www.npmjs.com/package/@airovo/rva-web) | `npm i @airovo/rva-web` |
+| `@airovo/rva-node` | [npm](https://www.npmjs.com/package/@airovo/rva-node) | `npm i @airovo/rva-node` |
+| `@airovo/rva-react` | [npm](https://www.npmjs.com/package/@airovo/rva-react) | `npm i @airovo/rva-react` |
+| `@airovo/rva-vue` | [npm](https://www.npmjs.com/package/@airovo/rva-vue) | `npm i @airovo/rva-vue` |
+| `@airovo/rva-svelte` | [npm](https://www.npmjs.com/package/@airovo/rva-svelte) | `npm i @airovo/rva-svelte` |
+| `@airovo/rva-react-native` | [npm](https://www.npmjs.com/package/@airovo/rva-react-native) | `npm i @airovo/rva-react-native` |
+| `@airovo/rva-types` | [npm](https://www.npmjs.com/package/@airovo/rva-types) | `npm i -D @airovo/rva-types` |
+| Swift — `RVA` | [Swift Package Manager](https://github.com/airovo/rva-swift) | `.package(url: "https://github.com/airovo/rva-swift", from: "0.1.0")` |
+| `rva_flutter` | [pub.dev](https://pub.dev/packages/rva_flutter) | `flutter pub add rva_flutter` |
+| `tech.airovo:rva-android` | [Maven Central](https://central.sonatype.com/artifact/tech.airovo/rva-android) | `implementation("tech.airovo:rva-android:0.1.1")` |
+
+The five normative primitives every binding implements are defined in
+[`adapters/contract.json`](adapters/contract.json).
+
+---
+
 ## The model
 
 ```
@@ -114,7 +140,7 @@ rva/
 ├── adapters/             # platform adapters + contract.json
 │   ├── contract.json     #   frozen primitive contract (all adapters)
 │   ├── types/  web/  node/  react/  vue/  svelte/  react-native/
-│   └── swift/  kotlin/  flutter/
+│   └── swift/  kotlin/  flutter/   # swift/ just links to airovo/rva-swift
 ├── examples/             # runnable consumers per adapter
 ├── conformance/          # cross-runtime ResolvedScene equality harness
 ├── corpus/               # torture corpus build + adversarial verification
@@ -170,8 +196,9 @@ cargo run -p rva-server
 
 ### Native adapters
 
-- **Swift** — lived in [`airovo/rva-swift`](https://github.com/airovo/rva-swift)
-  (Swift Package, Apple-only) — it pins the `RVAFFI.xcframework` this repo builds.
+- **Swift** — separate repo [`airovo/rva-swift`](https://github.com/airovo/rva-swift)
+  (pointer: [`adapters/swift`](adapters/swift/README.md)); it pins the
+  `RVAFFI.xcframework` this repo builds.
 - **Kotlin/Android** — `adapters/kotlin` (JNI + AAR), `examples/kotlin`
 - **Flutter** — `adapters/flutter` (Dart FFI widget), `examples/flutter`
 
