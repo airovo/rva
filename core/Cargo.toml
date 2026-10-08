@@ -4,6 +4,11 @@ description = "RVA (Responsive Visual Asset) reference core: parse, resolve, ren
 version.workspace = true
 edition.workspace = true
 license.workspace = true
+repository.workspace = true
+homepage.workspace = true
+readme = "README.md"
+keywords.workspace = true
+categories.workspace = true
 
 [features]
 default = ["render", "packaging"]

@@ -4,6 +4,11 @@ description = "Stable C ABI for the RVA core, used by native adapters (Swift, Ko
 version.workspace = true
 edition.workspace = true
 license.workspace = true
+repository.workspace = true
+homepage.workspace = true
+readme = "README.md"
+keywords.workspace = true
+categories.workspace = true
 
 [lib]
 name = "rva_ffi"

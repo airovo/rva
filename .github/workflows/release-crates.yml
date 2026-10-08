@@ -1,0 +1,44 @@
+name: Release (crates.io)
+
+# Publishes the Rust crates in dependency order:
+#   rva-core -> rva-ffi, rva-cli, rva-server, rva-wasm
+#
+# Auth: crates.io Trusted Publishing (OIDC) — no long-lived token.
+#
+# One-time setup (per crate) — a crate must already exist before OIDC works:
+#   1. First publish with a token (see "Bootstrapping" in docs/RELEASING.md).
+#   2. crates.io -> <crate> -> Settings -> Trusted Publishing -> Add:
+#        Provider: GitHub
+#        Owner:    airovo
+#        Repo:     rva
+#        Workflow: release-crates.yml   (exact filename)
+#   3. Tag and push (e.g. `git tag v0.1.0 && git push origin v0.1.0`).
+
+on:
+  push:
+    tags:
+      - "v*"
+  workflow_dispatch:
+
+concurrency:
+  group: release-crates-${{ github.ref }}
+  cancel-in-progress: false
+
+jobs:
+  publish:
+    name: cargo publish --workspace
+    runs-on: ubuntu-latest
+    permissions:
+      contents: read
+      id-token: write # crates.io trusted publishing
+    steps:
+      - uses: actions/checkout@v4
+      - uses: dtolnay/rust-toolchain@master
+        with:
+          toolchain: "1.96.0"
+      - uses: rust-lang/crates-io-auth-action@v1
+        id: auth
+      - name: Publish workspace to crates.io
+        env:
+          CARGO_REGISTRY_TOKEN: ${{ steps.auth.outputs.token }}
+        run: cargo publish --workspace

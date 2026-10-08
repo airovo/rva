@@ -6,6 +6,10 @@ members = ["core", "cli", "wasm", "ffi", "server"]
 version = "0.1.0"
 edition = "2021"
 license = "MIT"
+repository = "https://github.com/airovo/rva"
+homepage = "https://rva.airovo.tech"
+keywords = ["rva", "responsive", "image", "asset", "layout"]
+categories = ["graphics", "multimedia::images", "web-programming", "wasm"]
 
 [profile.release]
 lto = true

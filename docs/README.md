@@ -51,6 +51,7 @@ React Native, Swift, Kotlin and Flutter, plus a sample `.rva`.
 
 ## Project
 
+- [Releasing](./RELEASING.md) — npm (Changesets) and crates.io, via OIDC.
 - [Contributing](../CONTRIBUTING.md)
 - [Code of Conduct](../CODE_OF_CONDUCT.md)
 - [Security policy](../SECURITY.md)
