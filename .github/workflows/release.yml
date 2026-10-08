@@ -5,9 +5,17 @@ name: Release
 #   - When that PR is merged: publishes changed @airovo/* packages to npm and
 #     creates GitHub releases.
 #
-# Auth: prefer npm Trusted Publishing (OIDC) — configure a trusted publisher for
-# each package on npmjs.com and leave NPM_TOKEN unset. Otherwise create a
-# granular access token with "Bypass 2FA" and add it as the NPM_TOKEN secret.
+# Auth: npm Trusted Publishing (OIDC) — no long-lived secret.
+# One-time setup, for EACH package on npmjs.com -> Settings -> Trusted Publisher:
+#   Provider:            GitHub Actions
+#   Organization/user:   airovo
+#   Repository:          rva
+#   Workflow filename:   release.yml     (must match this file's name)
+#   Environment:         (leave empty)
+# Provenance is emitted automatically from the id-token permission below.
+# If you ever need a fallback, set the NPM_TOKEN secret and add it as
+#   NODE_AUTH_TOKEN: ${{ secrets.NPM_TOKEN }}
+# to the changesets/action step.
 
 on:
   push:
@@ -29,9 +37,10 @@ jobs:
       - uses: actions/checkout@v4
         with:
           fetch-depth: 0
+      # Node 24 ships npm >= 11.5, required for trusted publishing.
       - uses: actions/setup-node@v4
         with:
-          node-version: 22
+          node-version: 24
           cache: npm
           registry-url: https://registry.npmjs.org
       - uses: dtolnay/rust-toolchain@master
@@ -53,5 +62,3 @@ jobs:
         env:
           GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
           NPM_CONFIG_PROVENANCE: "true"
-          # Remove the line below if using OIDC trusted publishing.
-          NODE_AUTH_TOKEN: ${{ secrets.NPM_TOKEN }}

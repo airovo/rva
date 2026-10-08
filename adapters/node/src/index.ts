@@ -44,3 +44,4 @@ export function renderSvg(
 }
 
 export { renderToSvg, mimeFor };
+export { fontStack } from "./render-svg.js";

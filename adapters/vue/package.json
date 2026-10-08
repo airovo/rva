@@ -29,6 +29,14 @@
   },
   "license": "MIT",
   "homepage": "https://rva.airovo.tech",
+  "repository": {
+    "type": "git",
+    "url": "git+https://github.com/airovo/rva.git",
+    "directory": "adapters/vue"
+  },
+  "bugs": {
+    "url": "https://github.com/airovo/rva/issues"
+  },
   "author": "Airovo Technologies",
   "publishConfig": {
     "access": "public"

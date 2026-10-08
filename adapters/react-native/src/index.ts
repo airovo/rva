@@ -84,7 +84,8 @@ export function rvaHtml(src: string, alt: string, baseUrl: string): string {
 }
 
 const NativeRVAImage = forwardRef<View, RVAImageProps>(function NativeRVAImage(
-  { src, alt = "", style, ...rest },
+  // `baseUrl` is a WebView-fallback-only prop; strip it so it never reaches <View>.
+  { src, alt = "", baseUrl: _baseUrl, style, ...rest },
   ref
 ): ReactElement {
   const [dataUri, setDataUri] = useState<string | null>(null);
