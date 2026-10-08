@@ -963,7 +963,7 @@ dependencies = [
 
 [[package]]
 name = "rva-cli"
-version = "0.1.0"
+version = "0.1.1"
 dependencies = [
  "anyhow",
  "clap",
@@ -973,7 +973,7 @@ dependencies = [
 
 [[package]]
 name = "rva-core"
-version = "0.1.0"
+version = "0.1.1"
 dependencies = [
  "base64",
  "flate2",
@@ -993,7 +993,7 @@ dependencies = [
 
 [[package]]
 name = "rva-ffi"
-version = "0.1.0"
+version = "0.1.1"
 dependencies = [
  "jni",
  "rva-core",
@@ -1002,7 +1002,7 @@ dependencies = [
 
 [[package]]
 name = "rva-server"
-version = "0.1.0"
+version = "0.1.1"
 dependencies = [
  "axum",
  "clap",
@@ -1014,7 +1014,7 @@ dependencies = [
 
 [[package]]
 name = "rva-wasm"
-version = "0.1.0"
+version = "0.1.1"
 dependencies = [
  "console_error_panic_hook",
  "rva-core",

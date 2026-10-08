@@ -1,6 +1,6 @@
 name: rva_flutter
 description: RVA Flutter adapter — dart:ffi binding to the shared Rust core.
-version: 0.1.0
+version: 0.1.1
 publish_to: none
 
 environment:

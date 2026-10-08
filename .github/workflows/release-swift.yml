@@ -1,0 +1,104 @@
+name: Release (Swift / SPM)
+
+# SwiftPM's `binaryTarget(url:checksum:)` pins a checksum that must be present in
+# Package.swift *at the version tag*, so the tag is created here — after the
+# xcframework is built and the manifest is rewritten. Run this with a version
+# that already matches Cargo.toml ([workspace.package]).
+#
+# Pushing the `vX.Y.Z` tag also triggers the crates.io workflow (which skips
+# versions already published).
+
+on:
+  workflow_dispatch:
+    inputs:
+      version:
+        description: "Version to release, e.g. 0.1.2 (must match Cargo.toml)"
+        required: true
+
+concurrency:
+  group: release-swift-${{ github.ref }}
+  cancel-in-progress: false
+
+jobs:
+  release:
+    name: Build xcframework & publish
+    runs-on: macos-14
+    permissions:
+      contents: write # push the tag and create the GitHub Release
+    steps:
+      - uses: actions/checkout@v4
+        with:
+          fetch-depth: 0
+      - name: Configure git
+        run: |
+          git config user.name "github-actions[bot]"
+          git config user.email "41898282+github-actions[bot]@users.noreply.github.com"
+      - uses: dtolnay/rust-toolchain@master
+        with:
+          toolchain: "1.96.0"
+          targets: aarch64-apple-darwin,aarch64-apple-ios,aarch64-apple-ios-sim,x86_64-apple-ios
+      - name: Check version parity
+        run: node scripts/check-versions.mjs
+      - name: Verify version matches Cargo.toml
+        env:
+          VERSION: ${{ inputs.version }}
+        run: |
+          have="$(grep -m1 -E '^version = ' Cargo.toml | sed -E 's/.*"(.*)".*/\1/')"
+          if [ "$VERSION" != "$have" ]; then
+            echo "::error::input version '$VERSION' does not match Cargo.toml ('$have')"
+            exit 1
+          fi
+      - name: Build RVAFFI.xcframework
+        run: bash adapters/swift/build-xcframework.sh
+      - name: Package and compute checksum
+        id: pkg
+        run: |
+          cd adapters/swift
+          ditto -c -k --sequesterRsrc --keepParent RVAFFI.xcframework RVAFFI.xcframework.zip
+          checksum="$(swift package compute-checksum RVAFFI.xcframework.zip)"
+          echo "checksum=$checksum" >> "$GITHUB_OUTPUT"
+          echo "RVAFFI.xcframework.zip checksum: $checksum"
+      - name: Point Package.swift at the release asset
+        env:
+          VERSION: ${{ inputs.version }}
+          CHECKSUM: ${{ steps.pkg.outputs.checksum }}
+        run: |
+          python3 - <<'PY'
+          import os, re, pathlib
+          p = pathlib.Path("adapters/swift/Package.swift")
+          s = p.read_text()
+          url = (
+              "https://github.com/airovo/rva/releases/download/"
+              f"v{os.environ['VERSION']}/RVAFFI.xcframework.zip"
+          )
+          line = (
+              'let rvaFFI = Target.binaryTarget(name: "RVAFFI", '
+              f'url: "{url}", checksum: "{os.environ["CHECKSUM"]}")'
+          )
+          patched = re.sub(r'^let rvaFFI = .*$', line, s, count=1, flags=re.M)
+          if patched == s:
+              raise SystemExit("rvaFFI line not found in Package.swift")
+          p.write_text(patched)
+          PY
+      - name: Commit and tag
+        env:
+          VERSION: ${{ inputs.version }}
+        run: |
+          tag="v$VERSION"
+          if git rev-parse -q --verify "refs/tags/$tag" >/dev/null; then
+            echo "::error::tag $tag already exists"; exit 1
+          fi
+          git checkout -b "release-swift/$tag"
+          git add adapters/swift/Package.swift
+          git commit -m "release(swift): $tag"
+          git tag "$tag"
+          git push origin "$tag"
+      - name: Create GitHub Release and upload the xcframework
+        env:
+          GH_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+          VERSION: ${{ inputs.version }}
+        run: |
+          gh release create "v$VERSION" \
+            adapters/swift/RVAFFI.xcframework.zip \
+            --title "v$VERSION" \
+            --notes "Swift Package Manager binary artifact (RVAFFI.xcframework) for v$VERSION."

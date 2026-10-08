@@ -30,7 +30,9 @@
 #[cfg(feature = "jni")]
 mod jni_bridge;
 
-use rva_core::{render_to_png, resolve, Asset, Fonts, ResolvedScene};
+#[cfg(feature = "render")]
+use rva_core::render_to_png;
+use rva_core::{resolve, Asset, Fonts, ResolvedScene};
 use std::cell::RefCell;
 use std::ffi::{c_char, CStr, CString};
 use std::panic::{catch_unwind, AssertUnwindSafe};
@@ -233,6 +235,7 @@ pub unsafe extern "C" fn rva_resource(
 ///
 /// # Safety
 /// `handle` must be valid; `out_len` non-null.
+#[cfg(feature = "render")]
 #[no_mangle]
 pub unsafe extern "C" fn rva_render_png(
     handle: *const RvaHandle,

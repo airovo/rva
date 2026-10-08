@@ -14,3 +14,6 @@ categories = ["graphics", "multimedia::images", "web-programming", "wasm"]
 [profile.release]
 lto = true
 codegen-units = 1
+# NOTE: do not set `strip` here — it strips the wasm `target_features` section and
+# breaks wasm-opt/binaryen validation. Native FFI builds strip via `--config`
+# (see adapters/swift/build-xcframework.sh and scripts/build-native-libs.sh).

@@ -48,14 +48,16 @@ console.log(hasNativeCore());
 
 ## Native libraries
 
-Prebuilt binaries are **not** bundled (they are large). Build them from the core
-repository and vendor into `ios/` / `android/`:
+Prebuilt binaries are **not** bundled. Build them from the core repository and
+vendor into `ios/` / `android/`:
 
 ```bash
 ./scripts/build-native-libs.sh
 ```
 
-Without a linked native module the WebView fallback is used automatically. The
+On iOS the core ships as a **dynamic** `RVAFFI.xcframework` (~11 MB) and CocoaPods
+embeds it into the app automatically (see `RNRva.podspec`). Without a linked native
+module the WebView fallback is used automatically. The
 native module exposes `RNRva.resolve(uri, width, height)` and
 `RNRva.renderPng(uri, width, height)`.
 

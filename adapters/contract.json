@@ -1,5 +1,5 @@
 {
-  "version": "0.1.0",
+  "version": "0.1.1",
   "core": "rva-core",
   "resolverProfile": "rva-resolve/0.4",
   "normativePipeline": [

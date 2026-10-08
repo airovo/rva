@@ -15,10 +15,16 @@ name = "rva_ffi"
 crate-type = ["staticlib", "cdylib", "rlib"]
 
 [features]
-default = []
+# `render` enables `rva_render_png` (the Rust reference rasterizer). Adapters that
+# draw with the platform graphics stack can drop it: `--no-default-features` cuts
+# resvg/tiny-skia/fontdb and shrinks the shipped binary several-fold. The
+# `packaging` image codecs are never needed by the FFI surface.
+default = ["render"]
+render = ["rva-core/render"]
+packaging = ["rva-core/packaging"]
 jni = ["dep:jni"]
 
 [dependencies]
-rva-core = { path = "../core", version = "0.1.0" }
+rva-core = { path = "../core", version = "0.1.0", default-features = false }
 serde_json = "1"
 jni = { version = "0.21", optional = true }

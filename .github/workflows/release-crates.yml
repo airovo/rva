@@ -33,12 +33,29 @@ jobs:
       id-token: write # crates.io trusted publishing
     steps:
       - uses: actions/checkout@v4
+      - name: Check version parity
+        run: node scripts/check-versions.mjs
       - uses: dtolnay/rust-toolchain@master
         with:
           toolchain: "1.96.0"
+      - name: Resolve workspace version
+        id: ver
+        run: |
+          v="$(grep -m1 -E '^version = ' Cargo.toml | sed -E 's/.*"(.*)".*/\1/')"
+          echo "version=$v" >> "$GITHUB_OUTPUT"
+      - name: Skip if this version is already published
+        id: check
+        run: |
+          if curl -sf -A "airovo/rva release-crates" \
+              "https://crates.io/api/v1/crates/rva-core/${{ steps.ver.outputs.version }}" >/dev/null; then
+            echo "skip=true" >> "$GITHUB_OUTPUT"
+            echo "rva-core ${{ steps.ver.outputs.version }} is already on crates.io — skipping."
+          fi
       - uses: rust-lang/crates-io-auth-action@v1
+        if: steps.check.outputs.skip != 'true'
         id: auth
       - name: Publish workspace to crates.io
+        if: steps.check.outputs.skip != 'true'
         env:
           CARGO_REGISTRY_TOKEN: ${{ steps.auth.outputs.token }}
         run: cargo publish --workspace

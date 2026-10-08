@@ -55,7 +55,8 @@ if [ "$DO_APPLE" = 1 ]; then
     *) die "unknown macOS arch: $(uname -m)" ;;
   esac
   log "Apple: building librva_ffi.dylib for Flutter ($host_target)"
-  cargo build --release --target "$host_target" -p rva-ffi
+  cargo build --release --target "$host_target" -p rva-ffi \
+    --config 'profile.release.strip="symbols"'
   mkdir -p adapters/flutter/native/macos
   cp "target/$host_target/release/librva_ffi.dylib" adapters/flutter/native/macos/librva_ffi.dylib
 fi
@@ -92,7 +93,8 @@ if [ "$DO_ANDROID" = 1 ]; then
       "AR_${target//-/_}=$bin/llvm-ar" \
       "RANLIB_${target//-/_}=$bin/llvm-ranlib" \
       "CARGO_TARGET_${upper}_LINKER=$cc" \
-      cargo build --release --target "$target" -p rva-ffi --features jni
+      cargo build --release --target "$target" -p rva-ffi --features jni \
+        --config 'profile.release.strip="symbols"'
 
     local so="target/$target/release/librva_ffi.so"
     mkdir -p "adapters/kotlin/src/main/jniLibs/$abi" "adapters/flutter/native/android/$abi"

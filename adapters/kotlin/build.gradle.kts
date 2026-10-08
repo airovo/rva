@@ -10,6 +10,9 @@ plugins {
     kotlin("android") version "1.9.24"
 }
 
+// Release version — kept in parity with every other manifest (scripts/check-versions.mjs).
+version = "0.1.1"
+
 android {
     namespace = "dev.rva"
     compileSdk = 35

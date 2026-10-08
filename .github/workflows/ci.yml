@@ -10,6 +10,13 @@ concurrency:
   cancel-in-progress: true
 
 jobs:
+  version-parity:
+    name: Version parity
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+      - run: node scripts/check-versions.mjs
+
   rust:
     name: Rust · fmt · clippy · test
     runs-on: ubuntu-latest
