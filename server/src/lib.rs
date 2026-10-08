@@ -11,11 +11,14 @@ use std::sync::{Arc, Mutex};
 
 const MAX_CACHE_ENTRIES: usize = 64;
 
+/// Render cache keyed by `(width, height)` → encoded PNG bytes.
+type RenderCache = Mutex<HashMap<(u32, u32), Arc<Vec<u8>>>>;
+
 /// A loaded asset plus a font context and a small render cache.
 pub struct Renderer {
     asset: Asset,
     fonts: Fonts,
-    cache: Mutex<HashMap<(u32, u32), Arc<Vec<u8>>>>,
+    cache: RenderCache,
 }
 
 impl Renderer {

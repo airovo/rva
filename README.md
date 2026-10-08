@@ -1,5 +1,10 @@
 # RVA — Responsive Visual Asset
 
+[![CI](https://github.com/airovo/rva/actions/workflows/ci.yml/badge.svg)](https://github.com/airovo/rva/actions/workflows/ci.yml)
+[![Conformance](https://github.com/airovo/rva/actions/workflows/conformance.yml/badge.svg)](https://github.com/airovo/rva/actions/workflows/conformance.yml)
+[![Deny](https://github.com/airovo/rva/actions/workflows/deny.yml/badge.svg)](https://github.com/airovo/rva/actions/workflows/deny.yml)
+[![License: MIT](https://img.shields.io/badge/License-MIT-yellow.svg)](LICENSE)
+
 **Internally structured. Externally singular.** RVA is a self-contained visual
 asset format and composition model. A single `.rva` file holds independently
 renderable resources (raster, vector, text, masks) plus the semantic structure
@@ -13,6 +18,9 @@ pile of hand-maintained derivatives.
 This repository is the platform-neutral half of RVA: the reference **core**,
 **CLI**, **WASM** and **C ABI** bindings, a **server**, and thin **platform
 adapters**, together with the conformance suite and test corpora.
+
+> 📚 **Documentation index:** [`docs/`](docs/README.md) — spec, core, adapters,
+> conformance and examples in one place.
 
 ---
 
@@ -224,12 +232,17 @@ every offset/length, caps decompressed sizes and rejects malformed input. No
 embedded executable scripts, no implicit network fetches, SVG features are
 constrained, and embedded resources cannot escape the package sandbox.
 
+## Contributing
+
+See [`CONTRIBUTING.md`](CONTRIBUTING.md). This project follows the
+[Contributor Covenant Code of Conduct](CODE_OF_CONDUCT.md); report security
+issues per [`SECURITY.md`](SECURITY.md).
+
 ## License
 
-MIT. See [`Cargo.toml`](Cargo.toml) and the individual adapter manifests.
+MIT. See [`LICENSE`](LICENSE).
 
 ---
 
-The full feasibility rationale and roadmap live in
-`RVA_Product_Requirements_Document_v1.1.docx`; [`spec/overview.md`](spec/overview.md)
-is the living description of the implementation.
+[`spec/overview.md`](spec/overview.md) is the living description of the
+implementation.

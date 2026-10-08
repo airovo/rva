@@ -1,0 +1,52 @@
+name: Bug report
+description: Something behaves incorrectly (resolution, rendering, adapters, CLI…)
+labels: ["bug"]
+body:
+  - type: markdown
+    attributes:
+      value: |
+        Thanks for taking the time to file a bug. Please include enough detail to reproduce it.
+  - type: textarea
+    id: what-happened
+    attributes:
+      label: What happened?
+      description: A clear description of the bug and what you expected instead.
+    validations:
+      required: true
+  - type: textarea
+    id: reproduce
+    attributes:
+      label: Steps to reproduce
+      placeholder: |
+        1. asset: (attach the .rva if you can, or describe it)
+        2. viewport: 1280x720
+        3. run: `cargo run -p rva-cli -- --asset <asset> inspect --width 1280 --height 720`
+    validations:
+      required: true
+  - type: input
+    id: version
+    attributes:
+      label: Version / commit
+      description: rva-core version or git commit.
+    validations:
+      required: true
+  - type: dropdown
+    id: runtime
+    attributes:
+      label: Runtime
+      options:
+        - Rust core / CLI
+        - WASM (@airovo/rva-web / @airovo/rva-node)
+        - C ABI (rva-ffi)
+        - Server (rva-server)
+        - Adapter (react / vue / svelte / react-native)
+    validations:
+      required: true
+  - type: textarea
+    id: logs
+    attributes:
+      label: Relevant output
+      description: ResolvedScene JSON, diagnostics, stack traces.
+      render: shell
+    validations:
+      required: false

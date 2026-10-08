@@ -1,0 +1,58 @@
+# cargo-deny configuration — licenses, advisories, bans, sources.
+# https://embarkstudios.github.io/cargo-deny/
+#
+# Run locally:  cargo deny check
+# CI:           .github/workflows/deny.yml
+
+[graph]
+# Evaluate the graph with every feature enabled so optional deps (render,
+# packaging, jni) are covered too.
+all-features = true
+
+[advisories]
+# RustSec database; vulnerabilities/unsound deny by default. Add an entry to
+# `ignore` with a reason if a finding is genuinely not applicable.
+ignore = [
+    # `ttf-parser` is unmaintained upstream (no vulnerability). It is a
+    # transitive dependency of resvg/fontdb used only in the reference
+    # rasterizer; no upgrade is available yet.
+    { id = "RUSTSEC-2026-0192", reason = "unmaintained transitive font parser (resvg/fontdb); no upgrade path" },
+    { id = "RUSTSEC-2026-0206", reason = "unmaintained transitive text shaper (usvg/resvg); no upgrade path" },
+]
+
+[licenses]
+confidence-threshold = 0.9
+# Permissive licenses only. Copyleft is intentionally not allowed; a crate whose
+# only license is copyleft will fail here (its OR-licensed peers pass on MIT).
+allow = [
+    "MIT",
+    "MIT-0",
+    "Apache-2.0",
+    "Apache-2.0 WITH LLVM-exception",
+    "BSD-2-Clause",
+    "BSD-3-Clause",
+    "ISC",
+    "Zlib",
+    "0BSD",
+    "BSL-1.0",
+    "Unlicense",
+    "CC0-1.0",
+    "Unicode-3.0",
+    "MPL-2.0",
+    "OpenSSL",
+    "CDLA-Permissive-2.0",
+]
+
+[bans]
+# Duplicate crate versions are a warning, not a failure.
+multiple-versions = "warn"
+# A wildcard `*` version requirement is not acceptable in a published crate.
+wildcards = "deny"
+highlight = "all"
+
+[sources]
+# Dependencies must come from crates.io — no unknown registries or git sources.
+unknown-registry = "deny"
+unknown-git = "deny"
+allow-registry = ["https://github.com/rust-lang/crates.io-index"]
+allow-git = []

@@ -64,12 +64,18 @@ pub fn build_svg(asset: &Asset, resolved: &ResolvedScene) -> Result<String> {
     let base_rect = resolved
         .base_color
         .as_ref()
-        .map(|color| format!("<rect x=\"0\" y=\"0\" width=\"{w}\" height=\"{h}\" fill=\"{color}\"/>"))
+        .map(|color| {
+            format!("<rect x=\"0\" y=\"0\" width=\"{w}\" height=\"{h}\" fill=\"{color}\"/>")
+        })
         .unwrap_or_default();
 
     if let Some(background) = &resolved.background {
         match &background.kind {
-            ItemKind::Image { resource, fit, focus } => {
+            ItemKind::Image {
+                resource,
+                fit,
+                focus,
+            } => {
                 let uri = data_uri(
                     &asset.reference_bytes(resource)?,
                     &asset.relative_for(resource),
@@ -91,7 +97,11 @@ pub fn build_svg(asset: &Asset, resolved: &ResolvedScene) -> Result<String> {
                         "<g clip-path=\"url(#bgclip)\"><image x=\"{dx}\" y=\"{dy}\" width=\"{dw}\" height=\"{dh}\" preserveAspectRatio=\"none\" href=\"{uri}\" xlink:href=\"{uri}\"/></g>"
                     ));
                 } else {
-                    let par = if fit == "cover" { "xMidYMid slice" } else { "none" };
+                    let par = if fit == "cover" {
+                        "xMidYMid slice"
+                    } else {
+                        "none"
+                    };
                     body.push_str(&format!(
                         "<image x=\"0\" y=\"0\" width=\"{w}\" height=\"{h}\" preserveAspectRatio=\"{par}\" href=\"{uri}\" xlink:href=\"{uri}\"/>"
                     ));

@@ -1,0 +1,56 @@
+name: Release
+
+# Versioning + publishing via Changesets.
+#   - On push to main: opens/updates a "Version Packages" PR.
+#   - When that PR is merged: publishes changed @airovo/* packages to npm and
+#     creates GitHub releases.
+#
+# Auth: prefer npm Trusted Publishing (OIDC) — configure a trusted publisher for
+# each package on npmjs.com and leave NPM_TOKEN unset. Otherwise create a
+# granular access token with "Bypass 2FA" and add it as the NPM_TOKEN secret.
+
+on:
+  push:
+    branches: [main]
+  workflow_dispatch:
+
+concurrency:
+  group: release-${{ github.ref }}
+  cancel-in-progress: false
+
+jobs:
+  release:
+    name: Version & publish
+    runs-on: ubuntu-latest
+    permissions:
+      contents: write
+      id-token: write # npm provenance / OIDC trusted publishing
+    steps:
+      - uses: actions/checkout@v4
+        with:
+          fetch-depth: 0
+      - uses: actions/setup-node@v4
+        with:
+          node-version: 22
+          cache: npm
+          registry-url: https://registry.npmjs.org
+      - uses: dtolnay/rust-toolchain@stable
+        with:
+          targets: wasm32-unknown-unknown
+      - uses: taiki-e/install-action@v2
+        with:
+          tool: wasm-bindgen@0.2.129
+      - run: npm ci
+      - run: npm run build:wasm
+      - run: npm run build
+      - uses: changesets/action@v1
+        with:
+          version: npm run version
+          publish: npm run release
+          commit: "chore: version packages"
+          title: "chore: version packages"
+        env:
+          GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+          NPM_CONFIG_PROVENANCE: "true"
+          # Remove the line below if using OIDC trusted publishing.
+          NODE_AUTH_TOKEN: ${{ secrets.NPM_TOKEN }}

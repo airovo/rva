@@ -60,9 +60,3 @@ local.properties
 # Local scratch
 out/
 tmp/
-
-# Local-only assets and documents (not committed)
-rva-demo-assets/
-rva-torture-corpus-assets/
-concept-reference.png
-RVA_Product_Requirements_Document_v1.1.docx

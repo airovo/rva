@@ -123,7 +123,9 @@ pub enum ItemKind {
     },
     /// A procedural fill (solid colour or gradient), used for painted
     /// backgrounds.
-    Paint { paint: Paint },
+    Paint {
+        paint: Paint,
+    },
 }
 
 struct Candidate {
@@ -196,7 +198,8 @@ pub fn resolve(asset: &Asset, fonts: &Fonts, width: u32, height: u32) -> Result<
         .min_by(|a, b| a.cost().partial_cmp(&b.cost()).unwrap());
 
     let Some(best) = best else {
-        diagnostics.push("no topology is viable at this size; using the canonical fallback".to_string());
+        diagnostics
+            .push("no topology is viable at this size; using the canonical fallback".to_string());
         // Surface the specific blockers so the failure is actionable (names the
         // topology and the element/constraint that could not be satisfied).
         let mut seen = std::collections::BTreeSet::new();
@@ -282,8 +285,12 @@ fn evaluate(
 
     // Authored relationships first, then built-in clamp/protected-region
     // enforcement. Constraint penalties fold into the soft score.
-    let (constraint_hard, constraint_soft) =
-        solver::apply_constraints(&mut items, &asset.scene.constraints, width as f32, height as f32);
+    let (constraint_hard, constraint_soft) = solver::apply_constraints(
+        &mut items,
+        &asset.scene.constraints,
+        width as f32,
+        height as f32,
+    );
     let score = solver::enforce_and_score(&mut items, width as f32, height as f32);
     hard.extend(constraint_hard);
     hard.extend(score.hard);
@@ -404,7 +411,9 @@ fn layout_topology(
             priority: 100.0,
             crop_policy: None,
             focal_regions: Vec::new(),
-            kind: ItemKind::Paint { paint: paint.clone() },
+            kind: ItemKind::Paint {
+                paint: paint.clone(),
+            },
         }),
         _ => None,
     };
@@ -427,8 +436,8 @@ fn layout_topology(
         };
 
         // Hidden globally (all topologies) or hidden in this topology.
-        let is_hidden = element.visibility.as_deref() == Some("hidden")
-            || layout.hidden == Some(true);
+        let is_hidden =
+            element.visibility.as_deref() == Some("hidden") || layout.hidden == Some(true);
         if is_background || is_hidden || hidden.contains(&element.id) {
             continue;
         }
@@ -639,10 +648,26 @@ fn resolve_cta_regions(
                 visible,
                 bounds,
                 normalized_bounds: Bounds {
-                    x: if canvas_w > 0.0 { bounds.x / canvas_w } else { 0.0 },
-                    y: if canvas_h > 0.0 { bounds.y / canvas_h } else { 0.0 },
-                    width: if canvas_w > 0.0 { bounds.width / canvas_w } else { 0.0 },
-                    height: if canvas_h > 0.0 { bounds.height / canvas_h } else { 0.0 },
+                    x: if canvas_w > 0.0 {
+                        bounds.x / canvas_w
+                    } else {
+                        0.0
+                    },
+                    y: if canvas_h > 0.0 {
+                        bounds.y / canvas_h
+                    } else {
+                        0.0
+                    },
+                    width: if canvas_w > 0.0 {
+                        bounds.width / canvas_w
+                    } else {
+                        0.0
+                    },
+                    height: if canvas_h > 0.0 {
+                        bounds.height / canvas_h
+                    } else {
+                        0.0
+                    },
                 },
             }
         })

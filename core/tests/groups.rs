@@ -69,7 +69,11 @@ fn group_offsets_and_lightens_children_without_drawing_itself() {
     assert!((title.x - 0.2 * 1280.0).abs() < 0.5, "x was {}", title.x);
     assert!((title.y - 0.2 * 720.0).abs() < 0.5, "y was {}", title.y);
     // opacity inherited from the group.
-    assert!((title.opacity - 0.5).abs() < 0.001, "opacity was {}", title.opacity);
+    assert!(
+        (title.opacity - 0.5).abs() < 0.001,
+        "opacity was {}",
+        title.opacity
+    );
 }
 
 #[test]

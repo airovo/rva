@@ -157,7 +157,12 @@ fn painted_background_and_styled_text_resolve() {
     let background = resolved.background.expect("background present");
     match background.kind {
         ItemKind::Paint { paint } => {
-            assert_eq!(paint, Paint::Color { color: "#0A0F1C".to_string() });
+            assert_eq!(
+                paint,
+                Paint::Color {
+                    color: "#0A0F1C".to_string()
+                }
+            );
         }
         other => panic!("expected paint background, got {other:?}"),
     }

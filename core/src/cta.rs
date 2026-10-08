@@ -67,8 +67,6 @@ fn intersection(a: &Bounds, b: &Bounds) -> Option<(f32, f32)> {
     if area <= OVERLAP_EPSILON_AREA {
         return None;
     }
-    let smaller = (a.width * a.height)
-        .min(b.width * b.height)
-        .max(1e-6);
+    let smaller = (a.width * a.height).min(b.width * b.height).max(1e-6);
     Some((area, (area / smaller).clamp(0.0, 1.0)))
 }

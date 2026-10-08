@@ -220,11 +220,7 @@ fn hidden_source_resolves_invisible_with_zero_bounds() {
     let asset = asset(&scene);
     let fonts = Fonts::load_system();
     let resolved = resolve(&asset, &fonts, 1000, 500).unwrap();
-    let region = resolved
-        .cta_regions
-        .iter()
-        .find(|r| r.id == "buy")
-        .unwrap();
+    let region = resolved.cta_regions.iter().find(|r| r.id == "buy").unwrap();
     assert!(!region.visible, "hidden source must not stay actionable");
     assert_eq!(region.bounds.width, 0.0);
     assert_eq!(region.bounds.height, 0.0);
@@ -250,7 +246,10 @@ fn overlap_is_detected_with_viewport_and_ratio() {
     let conflicts = cta_overlaps(&resolved);
     assert_eq!(conflicts.len(), 1, "one conflicting pair");
     let conflict = &conflicts[0];
-    assert_eq!(conflict.regions, vec!["left".to_string(), "right".to_string()]);
+    assert_eq!(
+        conflict.regions,
+        vec!["left".to_string(), "right".to_string()]
+    );
     assert_eq!(conflict.width, 1000);
     assert_eq!(conflict.height, 500);
     // overlap 250x500 of a 500x500 region => ratio 0.5.
@@ -301,7 +300,11 @@ fn hit_padding_expands_bounds_and_can_create_overlap() {
     assert!((a.bounds.width - 275.0).abs() < 0.01);
     assert!((a.bounds.height - 175.0).abs() < 0.01);
 
-    assert_eq!(cta_overlaps(&resolved).len(), 1, "padding should introduce overlap");
+    assert_eq!(
+        cta_overlaps(&resolved).len(),
+        1,
+        "padding should introduce overlap"
+    );
 }
 
 #[test]
@@ -367,7 +370,9 @@ fn validation_rejects_bad_sources_and_duplicate_ids() {
     let asset = asset(scene);
     let issues = validate(&asset);
     assert!(issues.iter().any(|i| i.contains("duplicate cta region id")));
-    assert!(issues.iter().any(|i| i.contains("missing element 'missing'")));
+    assert!(issues
+        .iter()
+        .any(|i| i.contains("missing element 'missing'")));
     assert!(issues.iter().any(|i| i.contains("positive size")));
     assert!(issues.iter().any(|i| i.contains("must not be empty")));
 }

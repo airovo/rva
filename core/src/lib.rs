@@ -23,15 +23,13 @@ pub mod validate;
 /// version. Changing text metrics or layout rules must bump this.
 pub const RESOLVER_PROFILE: &str = "rva-resolve/0.4";
 
+pub use cta::{overlaps as cta_overlaps, CtaOverlap};
 pub use error::{Result, RvaError};
 pub use fonts::Fonts;
 pub use model::Scene;
+pub use model::{CtaRegion, CtaSource};
 #[cfg(feature = "render")]
 pub use render::{render_to_file, render_to_png};
-pub use cta::{overlaps as cta_overlaps, CtaOverlap};
-pub use model::{CtaRegion, CtaSource};
-pub use resolve::{
-    resolve, Bounds, ItemKind, ResolvedCtaRegion, ResolvedItem, ResolvedScene,
-};
+pub use resolve::{resolve, Bounds, ItemKind, ResolvedCtaRegion, ResolvedItem, ResolvedScene};
 pub use resources::Asset;
 pub use validate::validate;

@@ -356,8 +356,11 @@ fn optimize_resource(
     if let Some(display_width) = target_width {
         let cap_w = (display_width * MAX_SCALE).ceil().max(1.0) as u32;
         if cap_w < orig_w {
-            let cap_h = ((cap_w as f32) * (orig_h as f32) / (orig_w as f32)).round().max(1.0) as u32;
-            rgba = image::imageops::resize(&rgba, cap_w, cap_h, image::imageops::FilterType::Lanczos3);
+            let cap_h = ((cap_w as f32) * (orig_h as f32) / (orig_w as f32))
+                .round()
+                .max(1.0) as u32;
+            rgba =
+                image::imageops::resize(&rgba, cap_w, cap_h, image::imageops::FilterType::Lanczos3);
             resized = true;
         }
     }

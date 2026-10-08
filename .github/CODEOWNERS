@@ -1,0 +1,10 @@
+# Default owner for everything in the repo.
+*                       @airovo
+
+# Core model, resolver and conformance are the load-bearing pieces.
+/core/                  @airovo
+/conformance/           @airovo
+/spec/                  @airovo
+
+# Platform adapters.
+/adapters/              @airovo

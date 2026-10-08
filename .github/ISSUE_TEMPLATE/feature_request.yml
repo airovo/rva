@@ -1,0 +1,31 @@
+name: Feature / spec proposal
+description: Propose a capability or a change to the model/spec
+labels: ["enhancement"]
+body:
+  - type: textarea
+    id: problem
+    attributes:
+      label: The problem
+      description: What can't you express or do today?
+    validations:
+      required: true
+  - type: textarea
+    id: proposal
+    attributes:
+      label: Proposal
+      description: What would the model/resolver/adapters need to support? Keep it within RVA's scope (a responsive visual asset format, not an animation/interaction runtime).
+    validations:
+      required: true
+  - type: textarea
+    id: alternatives
+    attributes:
+      label: Alternatives considered
+    validations:
+      required: false
+  - type: checkboxes
+    id: scope
+    attributes:
+      label: Scope check
+      options:
+        - label: This does not require scripting, embedded behavior, or a general interaction/state machine. (RVA Regions/CTA flow host-owned behavior.)
+          required: false

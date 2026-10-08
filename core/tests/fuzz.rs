@@ -34,7 +34,7 @@ fn parser_survives_mutated_input() {
                 _ => {}
             }
         }
-        if rng.next() % 5 == 0 {
+        if rng.next().is_multiple_of(5) {
             let length = (rng.next() as usize) % bytes.len();
             bytes.truncate(length);
         }

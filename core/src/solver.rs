@@ -151,6 +151,8 @@ fn separate_occluders(items: &mut [ResolvedItem], canvas_w: f32, canvas_h: f32) 
         for &owner in &owners {
             let owner_z = items[owner].z;
             let focals = hard_focals(&items[owner]);
+            // Index loop: `items` is mutated in place while being consulted.
+            #[allow(clippy::needless_range_loop)]
             for other in 0..items.len() {
                 if other == owner || is_background(&items[other]) || items[other].z <= owner_z {
                     continue; // only elements drawn on top occlude
@@ -183,15 +185,15 @@ fn separate_occluders(items: &mut [ResolvedItem], canvas_w: f32, canvas_h: f32) 
     for &owner in &owners {
         let owner_z = items[owner].z;
         let focals = hard_focals(&items[owner]);
-        for other in 0..items.len() {
-            if other == owner || is_background(&items[other]) || items[other].z <= owner_z {
+        for (other, other_item) in items.iter().enumerate() {
+            if other == owner || is_background(other_item) || other_item.z <= owner_z {
                 continue;
             }
             for focal in &focals {
-                if intersection(*focal, rect(&items[other])) > 1.0 {
+                if intersection(*focal, rect(other_item)) > 1.0 {
                     hard.push(format!(
                         "'{}' cannot avoid the protected region of '{}'",
-                        items[other].id, items[owner].id
+                        other_item.id, items[owner].id
                     ));
                     break;
                 }
@@ -409,7 +411,8 @@ pub fn apply_constraints(
     let mut soft = 0.0f32;
 
     for constraint in constraints {
-        let Some(subject_index) = items.iter().position(|item| item.id == constraint.subject) else {
+        let Some(subject_index) = items.iter().position(|item| item.id == constraint.subject)
+        else {
             continue;
         };
         if is_background(&items[subject_index]) {
@@ -443,8 +446,14 @@ pub fn apply_constraints(
             }
             "contain" => {
                 let item = &mut items[subject_index];
-                item.x = item.x.clamp(target_rect.0, (target_rect.0 + target_rect.2 - item.w).max(target_rect.0));
-                item.y = item.y.clamp(target_rect.1, (target_rect.1 + target_rect.3 - item.h).max(target_rect.1));
+                item.x = item.x.clamp(
+                    target_rect.0,
+                    (target_rect.0 + target_rect.2 - item.w).max(target_rect.0),
+                );
+                item.y = item.y.clamp(
+                    target_rect.1,
+                    (target_rect.1 + target_rect.3 - item.h).max(target_rect.1),
+                );
             }
             "no-overlap" => {
                 let subject = rect(&items[subject_index]);
@@ -618,7 +627,14 @@ mod tests {
         assert!(score.soft > 0.0);
     }
 
-    fn gap(id: &str, subject: &str, target: &str, edge: &str, target_edge: &str, value: f32) -> Constraint {
+    fn gap(
+        id: &str,
+        subject: &str,
+        target: &str,
+        edge: &str,
+        target_edge: &str,
+        value: f32,
+    ) -> Constraint {
         Constraint {
             id: id.to_string(),
             kind: "gap".to_string(),
@@ -692,6 +708,9 @@ mod tests {
         let constraints = vec![gap("c", "wide", "canvas", "left", "right", 50.0)];
         let mut items = vec![subject];
         let (hard, _soft) = apply_constraints(&mut items, &constraints, 100.0, 100.0);
-        assert!(!hard.is_empty(), "impossible hard constraint must be reported");
+        assert!(
+            !hard.is_empty(),
+            "impossible hard constraint must be reported"
+        );
     }
 }

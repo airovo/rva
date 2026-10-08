@@ -29,7 +29,11 @@ pub fn validate(asset: &Asset) -> Vec<String> {
             ));
         }
         if let Some(parent) = &element.parent {
-            match scene.elements.iter().find(|candidate| &candidate.id == parent) {
+            match scene
+                .elements
+                .iter()
+                .find(|candidate| &candidate.id == parent)
+            {
                 None => issues.push(format!(
                     "element '{}' references missing group '{parent}'",
                     element.id
@@ -98,8 +102,7 @@ pub fn validate(asset: &Asset) -> Vec<String> {
             }
         }
 
-        let element_exists =
-            |id: &str| scene.elements.iter().any(|element| element.id == id);
+        let element_exists = |id: &str| scene.elements.iter().any(|element| element.id == id);
         match &region.source {
             CtaSource::Element { element_id } => {
                 if !element_exists(element_id) {
@@ -133,10 +136,7 @@ pub fn validate(asset: &Asset) -> Vec<String> {
                     ));
                 }
                 let epsilon = 1e-4;
-                if *x < -epsilon
-                    || *y < -epsilon
-                    || x + w > 1.0 + epsilon
-                    || y + h > 1.0 + epsilon
+                if *x < -epsilon || *y < -epsilon || x + w > 1.0 + epsilon || y + h > 1.0 + epsilon
                 {
                     issues.push(format!(
                         "cta region '{}' manual rect must lie within 0..1",

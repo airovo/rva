@@ -20,11 +20,15 @@
     "generate:types": "npm run generate -w @airovo/rva-types",
     "build": "npm run build -w @airovo/rva-types && npm run build -w @airovo/rva-web && npm run build -w @airovo/rva-node && npm run build -w @airovo/rva-react && npm run build -w @airovo/rva-vue && npm run build -w @airovo/rva-react-native",
     "check:svelte": "npm run check -w @airovo/rva-svelte",
-    "build:wasm": "./adapters/web/build.sh && node adapters/node/build.js"
+    "build:wasm": "./adapters/web/build.sh && node adapters/node/build.js",
+    "changeset": "changeset",
+    "version": "changeset version",
+    "release": "changeset publish"
   },
   "devDependencies": {
     "typescript": "^5.6.0",
-    "@types/node": "^22.0.0"
+    "@types/node": "^22.0.0",
+    "@changesets/cli": "^2.27.0"
   },
   "license": "MIT"
 }
