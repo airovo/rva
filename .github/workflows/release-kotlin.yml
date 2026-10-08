@@ -1,0 +1,38 @@
+name: Release (Maven Central)
+
+# Publishes the Android adapter (adapters/kotlin) to Maven Central via the
+# Sonatype Central Portal. Version comes from adapters/kotlin/build.gradle.kts.
+#
+# Required repository secrets:
+#   MAVEN_CENTRAL_USERNAME  Central Portal user-token username
+#   MAVEN_CENTRAL_PASSWORD  Central Portal user-token password
+#   GPG_SIGNING_KEY         ASCII-armored private key (gpg --export-secret-keys --armor <id>)
+#   GPG_SIGNING_PASSPHRASE  passphrase for that key
+# The public key must be published to a keyserver (keys.openpgp.org / keyserver.ubuntu.com).
+
+on:
+  workflow_dispatch:
+
+concurrency:
+  group: release-kotlin-${{ github.ref }}
+  cancel-in-progress: false
+
+jobs:
+  publish:
+    name: publishAndReleaseToMavenCentral
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-java@v4
+        with:
+          distribution: temurin
+          java-version: "17"
+      - uses: android-actions/setup-android@v3
+      - name: Publish to Maven Central
+        working-directory: adapters/kotlin
+        env:
+          ORG_GRADLE_PROJECT_mavenCentralUsername: ${{ secrets.MAVEN_CENTRAL_USERNAME }}
+          ORG_GRADLE_PROJECT_mavenCentralPassword: ${{ secrets.MAVEN_CENTRAL_PASSWORD }}
+          ORG_GRADLE_PROJECT_signingInMemoryKey: ${{ secrets.GPG_SIGNING_KEY }}
+          ORG_GRADLE_PROJECT_signingInMemoryKeyPassword: ${{ secrets.GPG_SIGNING_PASSPHRASE }}
+        run: ./gradlew publishAndReleaseToMavenCentral --no-daemon

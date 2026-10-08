@@ -133,6 +133,24 @@ node scripts/check-versions.mjs        # core + contract
 node scripts/check-versions.mjs v0.1.1 # also against a tag
 ```
 
-## Not yet automated
+## Kotlin / Android (Maven Central)
 
-- Kotlin / Android (Maven Central or GitHub Packages).
+The Android library (`adapters/kotlin`) publishes `tech.airovo:rva-android` to Maven
+Central via the Gradle `com.vanniktech.maven.publish` plugin and the Sonatype
+**Central Portal**.
+
+Workflow: [`.github/workflows/release-kotlin.yml`](../.github/workflows/release-kotlin.yml)
+(manual). It runs `./gradlew publishAndReleaseToMavenCentral`.
+
+One-time setup:
+1. Central Portal namespace `tech.airovo` verified (DNS TXT on `airovo.tech`).
+2. Generate a **user token** at https://central.sonatype.com/account (that
+   username/password is what the build uses — not your login).
+3. Create a GPG key; publish the public key to a keyserver (`keys.openpgp.org`
+   or `keyserver.ubuntu.com`) so Central can verify signatures.
+4. Add repo secrets: `MAVEN_CENTRAL_USERNAME`, `MAVEN_CENTRAL_PASSWORD`
+   (from the token), `GPG_SIGNING_KEY` (`gpg --export-secret-keys --armor <id>`),
+   `GPG_SIGNING_PASSPHRASE`.
+
+Release: bump `adapters/kotlin/build.gradle.kts` `version`, commit, then run the
+workflow. (A `-SNAPSHOT` version goes to the Central snapshots repository instead.)
