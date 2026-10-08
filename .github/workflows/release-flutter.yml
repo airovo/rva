@@ -2,17 +2,18 @@ name: Release (pub.dev)
 
 # Publishes the Flutter adapter (adapters/flutter) to pub.dev.
 #
-# Auth: pub.dev Automated publishing (OIDC) — configure it once at
+# Auth: pub.dev Automated publishing (OIDC). pub.dev only accepts publishing from
+# a GitHub Actions workflow triggered by a TAG push, so this runs on tags matching
+# its configured tag pattern. Configure once at
 #   https://pub.dev/packages/rva_flutter/admin  -> Automated publishing:
-#     repository: airovo/rva
-#     tag pattern: rva_flutter-v{{version}}   (only used for push events)
-#     enable: workflow_dispatch events  (this workflow is manual)
-#   No workflow filename is configured — pub.dev matches on repo + event.
-# The package must already exist (first publish is manual).
-# Fallback: set the PUBLISH_TOKEN secret and uncomment NODE... -> see below.
+#     repository: airovo/rva, tag pattern: rva_flutter-v{{version}}
+# The `version` in adapters/flutter/pubspec.yaml must equal the tag's version.
+# Fallback: set the PUBLISH_TOKEN secret and uncomment the env line below.
 
 on:
-  workflow_dispatch:
+  push:
+    tags:
+      - "rva_flutter-v*"
 
 concurrency:
   group: release-flutter-${{ github.ref }}
