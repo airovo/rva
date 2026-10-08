@@ -7,9 +7,9 @@
 # Outputs:
 #   Apple   : target/RVAFFI.xcframework             (consumed by airovo/rva-swift)
 #             adapters/react-native/ios/RVAFFI.xcframework        (copy)
-#   Android : adapters/kotlin/src/main/jniLibs/<abi>/librva_ffi.so  (JNI)
-#             adapters/flutter/native/android/<abi>/librva_ffi.so  (JNI)
-#   macOS   : adapters/flutter/native/macos/librva_ffi.dylib
+#             adapters/flutter/RVAFFI.xcframework                 (copy)
+#   Android : adapters/kotlin/src/main/jniLibs/<abi>/librva_ffi.so
+#             adapters/flutter/android/src/main/jniLibs/<abi>/librva_ffi.so
 #   Kotlin  : adapters/kotlin/build/outputs/aar/rva-kotlin-release.aar
 #
 # Requirements:
@@ -43,22 +43,13 @@ if [ "$DO_APPLE" = 1 ]; then
   log "Apple: building RVAFFI.xcframework (macOS + iOS device + simulator)"
   bash scripts/build-xcframework.sh
 
-  log "Apple: copying xcframework into react-native/ios"
-  mkdir -p adapters/react-native/ios
+  log "Apple: copying xcframework into react-native/ios and flutter/"
+  mkdir -p adapters/react-native/ios adapters/flutter
   rm -rf adapters/react-native/ios/RVAFFI.xcframework
   cp -R target/RVAFFI.xcframework adapters/react-native/ios/RVAFFI.xcframework
-
-  # Flutter (macOS) loads a dylib, not the static xcframework slice.
-  case "$(uname -m)" in
-    arm64) host_target="aarch64-apple-darwin" ;;
-    x86_64) host_target="x86_64-apple-darwin" ;;
-    *) die "unknown macOS arch: $(uname -m)" ;;
-  esac
-  log "Apple: building librva_ffi.dylib for Flutter ($host_target)"
-  cargo build --release --target "$host_target" -p rva-ffi \
-    --config 'profile.release.strip="symbols"'
-  mkdir -p adapters/flutter/native/macos
-  cp "target/$host_target/release/librva_ffi.dylib" adapters/flutter/native/macos/librva_ffi.dylib
+  # Flutter (iOS + macOS) vendors the same dynamic xcframework via its podspecs.
+  rm -rf adapters/flutter/RVAFFI.xcframework
+  cp -R target/RVAFFI.xcframework adapters/flutter/RVAFFI.xcframework
 fi
 
 # -------------------------------------------------------------- Android ------
@@ -97,9 +88,9 @@ if [ "$DO_ANDROID" = 1 ]; then
         --config 'profile.release.strip="symbols"'
 
     local so="target/$target/release/librva_ffi.so"
-    mkdir -p "adapters/kotlin/src/main/jniLibs/$abi" "adapters/flutter/native/android/$abi"
+    mkdir -p "adapters/kotlin/src/main/jniLibs/$abi" "adapters/flutter/android/src/main/jniLibs/$abi"
     cp "$so" "adapters/kotlin/src/main/jniLibs/$abi/librva_ffi.so"
-    cp "$so" "adapters/flutter/native/android/$abi/librva_ffi.so"
+    cp "$so" "adapters/flutter/android/src/main/jniLibs/$abi/librva_ffi.so"
   }
 
   build_android aarch64-linux-android arm64-v8a "aarch64-linux-android${api}-clang"

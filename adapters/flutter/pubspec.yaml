@@ -1,10 +1,20 @@
 name: rva_flutter
-description: RVA Flutter adapter — dart:ffi binding to the shared Rust core.
+description: RVA (Responsive Visual Asset) Flutter adapter — dart:ffi bindings to
+  the shared Rust core, with a Flutter canvas renderer.
 version: 0.1.1
-publish_to: none
+homepage: https://rva.airovo.tech
+repository: https://github.com/airovo/rva
+issue_tracker: https://github.com/airovo/rva/issues
+topics:
+  - rva
+  - responsive
+  - image
+  - ffi
+  - graphics
 
 environment:
   sdk: ">=3.4.0 <4.0.0"
+  flutter: ">=3.3.0"
 
 dependencies:
   flutter:
@@ -15,3 +25,13 @@ dependencies:
 dev_dependencies:
   flutter_test:
     sdk: flutter
+
+flutter:
+  plugin:
+    platforms:
+      android:
+        ffiPlugin: true
+      ios:
+        ffiPlugin: true
+      macos:
+        ffiPlugin: true

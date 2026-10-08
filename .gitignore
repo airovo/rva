@@ -49,7 +49,9 @@ local.properties
 
 # Swift
 .build/
-*.xcframework/
+# The React Native iOS binary is vendored locally (not committed); the Flutter
+# package's RVAFFI.xcframework IS committed (it ships on pub.dev).
+adapters/react-native/ios/*.xcframework/
 
 # Local environment / secrets
 .env

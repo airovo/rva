@@ -53,8 +53,11 @@ DynamicLibrary _loadLibrary() {
   if (override != null && override.isNotEmpty) {
     return DynamicLibrary.open(override);
   }
-  if (Platform.isMacOS) return DynamicLibrary.open('librva_ffi.dylib');
-  if (Platform.isIOS) return DynamicLibrary.process();
+  // Apple: the core is bundled as the dynamic RVAFFI.framework (see the ios/ and
+  // macos/ podspecs). Android/Linux: librva_ffi.so from the plugin jniLibs.
+  if (Platform.isMacOS || Platform.isIOS) {
+    return DynamicLibrary.open('RVAFFI.framework/RVAFFI');
+  }
   if (Platform.isAndroid || Platform.isLinux) return DynamicLibrary.open('librva_ffi.so');
   if (Platform.isWindows) return DynamicLibrary.open('rva_ffi.dll');
   throw UnsupportedError('RVA: unsupported platform');

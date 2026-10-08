@@ -86,6 +86,24 @@ and tags the new version. Consumers:
 .package(url: "https://github.com/airovo/rva-swift", from: "0.1.0")
 ```
 
+## Flutter (pub.dev)
+
+The Flutter adapter (`adapters/flutter`) is a real Flutter **FFI plugin** that
+bundles the core — `librva_ffi.so` under `android/src/main/jniLibs/`, and the
+dynamic `RVAFFI.xcframework` vendored by the `ios/` and `macos/` podspecs. It
+versions independently (its own pubspec `version`).
+
+Workflow: [`.github/workflows/release-flutter.yml`](../.github/workflows/release-flutter.yml).
+Triggered manually (**Actions → Release (pub.dev) → Run workflow**); runs
+`flutter pub publish` via pub.dev **Automated publishing (OIDC)**.
+
+One-time setup: publish once manually (`cd adapters/flutter && flutter pub publish`),
+then pub.dev → `rva_flutter` → Admin → Automated publishing → GitHub Actions, repo
+`airovo/rva`, workflow `release-flutter.yml`.
+
+Before running, bump `adapters/flutter/pubspec.yaml` `version` and add a
+`CHANGELOG.md` entry.
+
 ## Versioning
 
 There are two version axes:
@@ -116,4 +134,3 @@ node scripts/check-versions.mjs v0.1.1 # also against a tag
 ## Not yet automated
 
 - Kotlin / Android (Maven Central or GitHub Packages).
-- Flutter (pub.dev automated publishing).

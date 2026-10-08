@@ -186,8 +186,8 @@ AAR). Rebuild every one from the current core after changing `rva-core`:
 ```
 
 Outputs: `target/RVAFFI.xcframework` (published as a release asset and copied into
-`adapters/react-native/ios/`), `adapters/kotlin/src/main/jniLibs/<abi>/`,
-`adapters/flutter/native/{android,macos}/`, and
+`adapters/react-native/ios/` and `adapters/flutter/`), `adapters/kotlin/src/main/jniLibs/<abi>/`
+and `adapters/flutter/android/src/main/jniLibs/<abi>/`, and
 `adapters/kotlin/build/outputs/aar/rva-kotlin-release.aar`. Requires Xcode
 (Apple) and the Android NDK via `ANDROID_NDK_HOME` (or an SDK `ndk/<ver>`).
 

@@ -1,0 +1,40 @@
+// RVA Flutter adapter — Android library that packages the prebuilt core.
+//
+// `librva_ffi.so` (the same C ABI used by the Swift and Kotlin adapters) is
+// prebuilt by the core repo's scripts/build-native-libs.sh and dropped into
+// src/main/jniLibs/<abi>/, so there is no NDK/CMake build here.
+group = "tech.airovo.rva_flutter"
+version = "1.0"
+
+buildscript {
+    repositories {
+        google()
+        mavenCentral()
+    }
+    dependencies {
+        classpath("com.android.tools.build:gradle:8.7.3")
+    }
+}
+
+rootProject.allprojects {
+    repositories {
+        google()
+        mavenCentral()
+    }
+}
+
+apply plugin: "com.android.library"
+
+android {
+    namespace = "tech.airovo.rva_flutter"
+    compileSdk = 35
+
+    defaultConfig {
+        minSdk = 24
+    }
+
+    compileOptions {
+        sourceCompatibility = JavaVersion.VERSION_17
+        targetCompatibility = JavaVersion.VERSION_17
+    }
+}

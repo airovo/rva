@@ -1,4 +1,13 @@
+# Dart / Flutter
 .dart_tool/
+.packages
 build/
 .flutter-plugins
 .flutter-plugins-dependencies
+
+# Libraries shouldn't pin a lockfile (apps do).
+pubspec.lock
+
+# Platform build output
+ios/Pods/
+macos/Pods/
