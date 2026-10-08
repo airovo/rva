@@ -1,6 +1,6 @@
 {
   "name": "@airovo/rva-node",
-  "version": "0.1.0",
+  "version": "0.1.1",
   "description": "Node.js/server adapter for RVA: resolve and render .rva assets.",
   "main": "dist/index.js",
   "types": "dist/index.d.ts",
@@ -14,7 +14,7 @@
     "prepublishOnly": "npm run build"
   },
   "dependencies": {
-    "@airovo/rva-types": "^0.1.0"
+    "@airovo/rva-types": "^0.1.1"
   },
   "license": "MIT",
   "homepage": "https://rva.airovo.tech",
