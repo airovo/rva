@@ -62,4 +62,8 @@ jobs:
           title: "chore: version packages"
         env:
           GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
-          NPM_CONFIG_PROVENANCE: "true"
+          # Do NOT force NPM_CONFIG_PROVENANCE. npm generates provenance
+          # automatically for trusted publishing, but only when the source
+          # repository is public. Forcing it while the repo is private makes
+          # npm sign a bundle the registry rejects (E422). It turns on by itself
+          # once the repo is made public.
