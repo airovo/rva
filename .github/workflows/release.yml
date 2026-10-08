@@ -34,8 +34,9 @@ jobs:
           node-version: 22
           cache: npm
           registry-url: https://registry.npmjs.org
-      - uses: dtolnay/rust-toolchain@stable
+      - uses: dtolnay/rust-toolchain@master
         with:
+          toolchain: "1.96.0"
           targets: wasm32-unknown-unknown
       - uses: taiki-e/install-action@v2
         with:

@@ -1,4 +1,6 @@
 [toolchain]
-channel = "stable"
+# Pinned for reproducible builds and deterministic lint output. Bump deliberately
+# (update this and the `toolchain:` inputs in .github/workflows/*).
+channel = "1.96.0"
 components = ["rustfmt", "clippy"]
 targets = ["wasm32-unknown-unknown"]

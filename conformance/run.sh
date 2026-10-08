@@ -12,7 +12,8 @@ cargo build --manifest-path "$root/Cargo.toml" -p rva-cli -p rva-ffi
 
 echo "refreshing WASM bindings..."
 node "$root/adapters/node/build.js" >/dev/null
-(cd "$root" && npm run build -w @airovo/rva-node >/dev/null)
+# The node adapter's types depend on @airovo/rva-types, so build it first.
+(cd "$root" && npm run build -w @airovo/rva-types >/dev/null && npm run build -w @airovo/rva-node >/dev/null)
 
 echo "compiling C ABI runner..."
 lib="$root/target/debug"

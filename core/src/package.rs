@@ -438,7 +438,7 @@ fn encode_webp_lossless(rgba: &image::RgbaImage) -> Option<Vec<u8>> {
 #[cfg(feature = "packaging")]
 fn encode_jpeg(rgba: &[u8], width: u32, height: u32, quality: u8) -> Option<Vec<u8>> {
     let mut rgb = Vec::with_capacity((width as usize * height as usize) * 3);
-    for pixel in rgba.chunks_exact(4) {
+    for pixel in rgba.as_chunks::<4>().0 {
         rgb.extend_from_slice(&pixel[..3]);
     }
     let mut out = Vec::new();

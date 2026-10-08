@@ -1,0 +1,43 @@
+{
+  "$schema": "https://json-schema.org/draft/2020-12/schema",
+  "title": "RVA Draft Scene Schema",
+  "type": "object",
+  "required": [
+    "format",
+    "formatVersion",
+    "resources",
+    "elements",
+    "topologies"
+  ],
+  "properties": {
+    "format": {
+      "const": "RVA"
+    },
+    "formatVersion": {
+      "type": "string"
+    },
+    "name": {
+      "type": "string"
+    },
+    "designSpace": {
+      "type": "object",
+      "required": [
+        "width",
+        "height"
+      ]
+    },
+    "resources": {
+      "type": "object"
+    },
+    "elements": {
+      "type": "array"
+    },
+    "topologies": {
+      "type": "array",
+      "minItems": 1
+    },
+    "fallback": {
+      "type": "object"
+    }
+  }
+}
