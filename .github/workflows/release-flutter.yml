@@ -2,40 +2,28 @@ name: Release (pub.dev)
 
 # Publishes the Flutter adapter (adapters/flutter) to pub.dev.
 #
-# Auth: pub.dev Automated publishing (OIDC). pub.dev only accepts publishing from
-# a GitHub Actions workflow triggered by a TAG push, so this runs on tags matching
-# its configured tag pattern. Configure once at
-#   https://pub.dev/packages/rva_flutter/admin  -> Automated publishing:
-#     repository: airovo/rva, tag pattern: rva_flutter-v{{version}}
-# The `version` in adapters/flutter/pubspec.yaml must equal the tag's version.
-# Fallback: set the PUBLISH_TOKEN secret and uncomment the env line below.
+# pub.dev automated publishing only accepts TAG-triggered runs, and the OIDC token
+# is provisioned by dart-lang/setup-dart (see the reusable workflow below) — a
+# plain `flutter pub publish` in a custom workflow falls back to interactive login.
+#
+# Configure once at https://pub.dev/packages/rva_flutter/admin -> Automated
+# publishing: repository `airovo/rva`, tag pattern `rva_flutter-v{{version}}`,
+# enable push events. The pubspec `version` must equal the tag's version.
+#
+# Release: bump adapters/flutter/pubspec.yaml + CHANGELOG, commit, then
+#   git tag rva_flutter-vX.Y.Z && git push origin rva_flutter-vX.Y.Z
 
 on:
   push:
     tags:
       - "rva_flutter-v*"
 
-concurrency:
-  group: release-flutter-${{ github.ref }}
-  cancel-in-progress: false
-
 jobs:
   publish:
-    name: flutter pub publish
-    runs-on: ubuntu-latest
+    name: Publish to pub.dev
     permissions:
-      id-token: write # pub.dev automated publishing (OIDC)
+      id-token: write # OIDC for pub.dev automated publishing
       contents: read
-    defaults:
-      run:
-        working-directory: adapters/flutter
-    steps:
-      - uses: actions/checkout@v4
-      - uses: subosito/flutter-action@v2
-        with:
-          channel: stable
-      - run: flutter pub get
-      - name: Publish
-        run: flutter pub publish --force
-        # For a token fallback instead of OIDC, set the PUBLISH_TOKEN secret and
-        # add:  env: { PUBLISH_TOKEN: ${{ secrets.PUBLISH_TOKEN }} }
+    uses: dart-lang/setup-dart/.github/workflows/publish.yml@v1
+    with:
+      working-directory: adapters/flutter
