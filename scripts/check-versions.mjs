@@ -1,10 +1,19 @@
 #!/usr/bin/env node
-// Assert the RVA release version is identical across every manifest that carries
-// one. When run on a git tag (CI sets GITHUB_REF_TYPE=tag), also assert the tag
-// matches. Run in CI and at the top of the publish workflows.
+// RVA version / contract check.
 //
-//   node scripts/check-versions.mjs          # manifests only
-//   node scripts/check-versions.mjs v0.1.1   # also check against an explicit tag
+// The *core* (the Cargo workspace: rva-core / rva-wasm / rva-ffi / rva-cli /
+// rva-server) has a single version, and it is what affects cross-runtime
+// determinism. Adapters (npm packages, Swift, Kotlin, Flutter) version
+// independently — they only need to bundle a compatible core — so they are
+// reported but never forced to match the core.
+//
+// Enforced:
+//   1. every workspace crate inherits the workspace version (core-internal parity),
+//   2. adapters/contract.json `resolverProfile` == rva_core::RESOLVER_PROFILE,
+//   3. when run on a release tag (vX.Y.Z), the tag equals the core version.
+//
+//   node scripts/check-versions.mjs          # (1) + (2)
+//   node scripts/check-versions.mjs v0.1.1   # also (3)
 
 import { readFileSync } from "node:fs";
 import path from "node:path";
@@ -12,62 +21,73 @@ import { fileURLToPath } from "node:url";
 
 const root = path.resolve(path.dirname(fileURLToPath(import.meta.url)), "..");
 const read = (p) => readFileSync(path.join(root, p), "utf8");
-const fromJson = (p) => JSON.parse(read(p)).version;
+const asJson = (p) => JSON.parse(read(p));
 
-const entries = [];
-const add = (label, version) => entries.push([label, version]);
+const failures = [];
 
-// Cargo workspace (the release version for all crates).
-add(
-  "Cargo.toml",
-  read("Cargo.toml").match(/\[workspace\.package\][\s\S]*?^version\s*=\s*"([^"]+)"/m)?.[1],
-);
+// 1. Core version.
+const coreVersion = read("Cargo.toml").match(
+  /\[workspace\.package\][\s\S]*?^version\s*=\s*"([^"]+)"/m,
+)?.[1];
+if (!coreVersion) failures.push("Cargo.toml: [workspace.package] version not found");
 
-// Adapter contract.
-add("adapters/contract.json", fromJson("adapters/contract.json"));
-
-// npm packages.
-for (const pkg of ["types", "web", "node", "react", "vue", "svelte", "react-native"]) {
-  add(`adapters/${pkg}/package.json`, fromJson(`adapters/${pkg}/package.json`));
+for (const crate of ["core", "cli", "ffi", "server", "wasm"]) {
+  if (!/^version\.workspace\s*=\s*true/m.test(read(`${crate}/Cargo.toml`))) {
+    failures.push(`${crate}/Cargo.toml must use \`version.workspace = true\``);
+  }
 }
 
-// Flutter.
-add(
-  "adapters/flutter/pubspec.yaml",
-  read("adapters/flutter/pubspec.yaml").match(/^version:\s*([0-9][^\s+]*)/m)?.[1],
-);
+// 2. Resolver profile agreement.
+const coreProfile = read("core/src/lib.rs").match(
+  /RESOLVER_PROFILE\s*:\s*&str\s*=\s*"([^"]+)"/,
+)?.[1];
+const contractProfile = asJson("adapters/contract.json").resolverProfile;
+if (!coreProfile) {
+  failures.push("core/src/lib.rs: RESOLVER_PROFILE not found");
+} else if (coreProfile !== contractProfile) {
+  failures.push(
+    `resolver profile mismatch: core ${coreProfile} vs contract.json ${contractProfile}`,
+  );
+}
 
-// Kotlin / Android.
-add(
-  "adapters/kotlin/build.gradle.kts",
-  read("adapters/kotlin/build.gradle.kts").match(/^version\s*=\s*"([^"]+)"/m)?.[1],
-);
-
-// React Native iOS podspec.
-add(
-  "adapters/react-native/RNRva.podspec",
-  read("adapters/react-native/RNRva.podspec").match(/^\s*s\.version\s*=\s*"([^"]+)"/m)?.[1],
-);
-
-// git tag (CI tags, or an explicit argument).
+// 3. Release tag (core stream).
 const tag =
-  process.env.GITHUB_REF_TYPE === "tag"
-    ? process.env.GITHUB_REF_NAME
-    : process.argv[2];
-if (tag) add(`git tag ${tag}`, tag.replace(/^v/, ""));
-
-const width = Math.max(...entries.map(([label]) => label.length));
-for (const [label, version] of entries) {
-  console.log(`  ${label.padEnd(width)}  ${version ?? "<missing>"}`);
+  process.env.GITHUB_REF_TYPE === "tag" ? process.env.GITHUB_REF_NAME : process.argv[2];
+if (tag && /^v?\d/.test(tag)) {
+  const tagged = tag.replace(/^v/, "");
+  if (tagged !== coreVersion) {
+    failures.push(`tag ${tag} does not match core version ${coreVersion}`);
+  }
 }
 
-const missing = entries.filter(([, version]) => !version);
-const distinct = new Set(entries.map(([, version]) => version));
+// Adapters — independent, reported for visibility only.
+const adapters = [
+  ...["types", "web", "node", "react", "vue", "svelte", "react-native"].map(
+    (p) => [`adapters/${p}/package.json`, asJson(`adapters/${p}/package.json`).version],
+  ),
+  [
+    "adapters/flutter/pubspec.yaml",
+    read("adapters/flutter/pubspec.yaml").match(/^version:\s*([0-9][^\s+]*)/m)?.[1],
+  ],
+  [
+    "adapters/kotlin/build.gradle.kts",
+    read("adapters/kotlin/build.gradle.kts").match(/^version\s*=\s*"([^"]+)"/m)?.[1],
+  ],
+  [
+    "adapters/react-native/RNRva.podspec",
+    read("adapters/react-native/RNRva.podspec").match(/^\s*s\.version\s*=\s*"([^"]+)"/m)?.[1],
+  ],
+];
 
-if (missing.length > 0 || distinct.size > 1) {
-  const expected = entries.find(([, version]) => version)?.[1] ?? "?";
-  console.error(`\n::error::version parity failed — expected every manifest to be ${expected}`);
+console.log(`core version:     ${coreVersion}`);
+console.log(`resolver profile: ${coreProfile}`);
+console.log("adapters (independent versions, not enforced):");
+for (const [name, version] of adapters) {
+  console.log(`  ${name.padEnd(36)} ${version ?? "<none>"}`);
+}
+
+if (failures.length > 0) {
+  for (const failure of failures) console.error(`\n::error::${failure}`);
   process.exit(1);
 }
-
-console.log(`\nversion parity OK: ${entries[0][1]}`);
+console.log("\ncore version & contract OK");

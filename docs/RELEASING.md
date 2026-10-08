@@ -86,23 +86,27 @@ Consumers:
 
 ## Versioning
 
-RVA is a single contract spanning every runtime, so every channel ships the **same
-version**. `scripts/check-versions.mjs` asserts this and runs in CI (and at the top
-of both publish workflows); on a tag it also checks the tag matches.
+There are two version axes:
 
-Keep these in parity — bump them together:
+- **Core** — the Cargo workspace (`rva-core`, `rva-wasm`, `rva-ffi`, `rva-cli`,
+  `rva-server`). One version; it is what affects cross-runtime determinism. The
+  Swift package shares this stream (its SPM tag equals the core version).
+- **Adapters** — each npm package, and Kotlin / Flutter. Versioned **independently**
+  (Changesets for npm; the `version` field in each native manifest). An adapter-only
+  change (e.g. a DOM fix in `@airovo/rva-web`) ships without touching the core;
+  a core change that alters resolution requires re-releasing the adapters that
+  bundle the WASM (`rva-web`, `rva-node`) or the native binaries.
 
-- `Cargo.toml` → `[workspace.package] version`
-- `adapters/contract.json` → `version`
-- `adapters/*/package.json` → `version` (Changesets bumps these; bump the rest in
-  the same "Version Packages" PR)
-- `adapters/flutter/pubspec.yaml` → `version`
-- `adapters/kotlin/build.gradle.kts` → `version`
+`scripts/check-versions.mjs` enforces only what must agree:
 
-Run the check locally:
+1. every workspace crate inherits the workspace version (core-internal parity),
+2. `adapters/contract.json` → `resolverProfile` == `rva_core::RESOLVER_PROFILE`,
+3. on a release tag `vX.Y.Z`, the tag equals the core version.
+
+Adapter versions are printed for visibility but never forced to match.
 
 ```bash
-node scripts/check-versions.mjs        # manifests
+node scripts/check-versions.mjs        # core + contract
 node scripts/check-versions.mjs v0.1.1 # also against a tag
 ```
 
