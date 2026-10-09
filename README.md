@@ -25,6 +25,19 @@ adapters**, together with the conformance suite and test corpora.
 
 ---
 
+### See RVA in action
+
+One visual asset. Multiple aspect ratios.
+Watch the layout adapt without creating separate images.
+
+[![RVA Responsive Demo](./docs/assets/rva-demo.webp)](https://rva.airovo.tech/)
+
+**[▶ Try Interactive Demo](https://rva.airovo.tech/)**
+
+Resize, explore, and experience responsive visual assets.
+
+---
+
 ## Packages
 
 The core is a resolver; the adapters only render its output. Everything is MIT
